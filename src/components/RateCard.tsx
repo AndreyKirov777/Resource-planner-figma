@@ -333,7 +333,7 @@ export function RateCard({ resources }: RateCardProps) {
           rowData={rowData}
           columnDefs={columnDefs}
           pagination={true}
-          paginationPageSize={10}
+          paginationPageSize={20}
           domLayout="autoHeight"
           suppressRowClickSelection={true}
           rowSelection="multiple"
