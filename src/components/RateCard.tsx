@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ColDef } from 'ag-grid-community';
 import { Button } from './ui/button';
+import { Plus } from 'lucide-react';
 
 // Import AG Grid styles
 import 'ag-grid-community/styles/ag-grid.css';
@@ -249,16 +250,10 @@ export function RateCard({ resources }: RateCardProps) {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Rate Card</h2>
-        <Button 
-          onClick={handleImportRateCard}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-        >
+        <Button onClick={handleImportRateCard} title="Import rate card">
+          <Plus className="h-4 w-4 mr-1"/>
           Import rate card
         </Button>
-      </div>
-      
       <div className="ag-theme-alpine" style={{ height: 600, width: '100%' }}>
         <AgGridReact
           rowData={rowData}
