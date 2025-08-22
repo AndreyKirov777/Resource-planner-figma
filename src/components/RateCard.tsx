@@ -3,6 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import { ColDef } from 'ag-grid-community';
 import { Button } from './ui/button';
 import { Plus } from 'lucide-react';
+import * as ExcelJS from 'exceljs';
 
 // Import AG Grid styles
 import 'ag-grid-community/styles/ag-grid.css';
@@ -243,9 +244,82 @@ export function RateCard({ resources }: RateCardProps) {
     }
   ];
 
-  const handleImportRateCard = () => {
-    // TODO: Implement file open dialog functionality
-    console.log('Import rate card button clicked');
+  const handleImportRateCard = async () => {
+    try {
+      // Create a file input element
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = '.xlsx,.xls';
+      fileInput.style.display = 'none';
+      
+      fileInput.onchange = async (event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        
+        if (!file) return;
+        
+        try {
+          const workbook = new ExcelJS.Workbook();
+          const arrayBuffer = await file.arrayBuffer();
+          await workbook.xlsx.load(arrayBuffer);
+          
+          // Get the "RMNG RATES" sheet
+          const worksheet = workbook.getWorksheet('RMNG RATES');
+          if (!worksheet) {
+            alert('Sheet "RMNG RATES" not found in the Excel file');
+            return;
+          }
+          
+          const importedData: RateCardRow[] = [];
+          
+          // Start from row 2 (assuming row 1 is headers)
+          worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return; // Skip header row
+            
+            const rowData: RateCardRow = {
+              role: row.getCell('A').value?.toString() || '',
+              namingInPM: row.getCell('B').value?.toString() || '',
+              discipline: row.getCell('C').value?.toString() || '',
+              description: row.getCell('D').value?.toString() || '',
+              ukraine: parseFloat(row.getCell('E').value?.toString() || '0'),
+              easternEurope: parseFloat(row.getCell('F').value?.toString() || '0'),
+              asiaGE: parseFloat(row.getCell('G').value?.toString() || '0'),
+              asiaARMKZ: parseFloat(row.getCell('H').value?.toString() || '0'),
+              latam: parseFloat(row.getCell('I').value?.toString() || '0'),
+              mexico: parseFloat(row.getCell('J').value?.toString() || '0'),
+              india: parseFloat(row.getCell('K').value?.toString() || '0'),
+              newYork: parseFloat(row.getCell('L').value?.toString() || '0'),
+              london: parseFloat(row.getCell('M').value?.toString() || '0')
+            };
+            
+            // Only add rows that have at least a role name
+            if (rowData.role.trim()) {
+              importedData.push(rowData);
+            }
+          });
+          
+          if (importedData.length > 0) {
+            setRowData(importedData);
+            alert(`Successfully imported ${importedData.length} rate card entries`);
+          } else {
+            alert('No valid data found in the Excel file');
+          }
+          
+        } catch (error) {
+          console.error('Error importing Excel file:', error);
+          alert('Error importing Excel file. Please check the file format and try again.');
+        }
+      };
+      
+      // Trigger file selection
+      document.body.appendChild(fileInput);
+      fileInput.click();
+      document.body.removeChild(fileInput);
+      
+    } catch (error) {
+      console.error('Error setting up file import:', error);
+      alert('Error setting up file import');
+    }
   };
 
   return (
