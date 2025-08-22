@@ -274,7 +274,7 @@ export function RateCard({ resources }: RateCardProps) {
           
           // Start from row 2 (assuming row 1 is headers)
           worksheet.eachRow((row, rowNumber) => {
-            if (rowNumber === 1) return; // Skip header row
+            if (rowNumber <= 2) return; // Skip header row
             
             const rowData: RateCardRow = {
               role: row.getCell('A').value?.toString() || '',
