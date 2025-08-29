@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ColDef } from 'ag-grid-community';
 import { Button } from './ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import * as ExcelJS from 'exceljs';
 import { RateCard as RateCardType } from '../services/api';
 
@@ -349,12 +349,40 @@ export function RateCard({
     }
   };
 
+  const handleClearAllRateCards = () => {
+    if (rateCards.length === 0) {
+      alert('The table is already empty.');
+      return;
+    }
+    
+    const confirmed = window.confirm(`Are you sure you want to delete all ${rateCards.length} rate card entries? This action cannot be undone.`);
+    
+    if (confirmed) {
+      // Delete all rate cards by calling onDeleteRateCard for each one
+      rateCards.forEach(rateCard => {
+        onDeleteRateCard(rateCard.id);
+      });
+      alert('All rate card entries have been cleared.');
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
+      <div className="flex gap-2">
         <Button onClick={handleImportRateCard} title="Import rate card">
           <Plus className="h-4 w-4 mr-1"/>
           Import rate card
         </Button>
+        <Button 
+          onClick={handleClearAllRateCards} 
+          variant="destructive"
+          title="Clear all rate cards"
+          disabled={rateCards.length === 0}
+        >
+          <Trash2 className="h-4 w-4 mr-1"/>
+          Clear All
+        </Button>
+      </div>
       <div className="ag-theme-alpine" style={{ height: 600, width: '100%' }}>
         <AgGridReact
           rowData={rateCards}
