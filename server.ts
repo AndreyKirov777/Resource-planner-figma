@@ -1,0 +1,334 @@
+import express from 'express';
+import cors from 'cors';
+import { PrismaClient } from './src/generated/prisma';
+
+const app = express();
+const prisma = new PrismaClient();
+const PORT = 3001;
+
+app.use(cors());
+app.use(express.json());
+
+// Initialize default project if none exists
+async function initializeDefaultProject() {
+  const existingProject = await prisma.project.findFirst();
+  if (!existingProject) {
+    await prisma.project.create({
+      data: {
+        name: 'Default Project',
+        description: 'Default project for resource planning',
+        daysInFTE: 20,
+        clientCurrency: 'EUR',
+        exchangeRate: 0.89
+      }
+    });
+  }
+}
+
+// Project endpoints
+app.get('/api/projects', async (req, res) => {
+  try {
+    const projects = await prisma.project.findMany();
+    res.json(projects);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch projects' });
+  }
+});
+
+app.get('/api/projects/:id', async (req, res) => {
+  try {
+    const project = await prisma.project.findUnique({
+      where: { id: parseInt(req.params.id) },
+      include: {
+        rateCards: true,
+        resourceLists: true,
+        resourcePlans: {
+          include: {
+            weeklyAllocations: true
+          }
+        }
+      }
+    });
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    res.json(project);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch project' });
+  }
+});
+
+app.post('/api/projects', async (req, res) => {
+  try {
+    const project = await prisma.project.create({
+      data: req.body
+    });
+    res.json(project);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create project' });
+  }
+});
+
+app.put('/api/projects/:id', async (req, res) => {
+  try {
+    const project = await prisma.project.update({
+      where: { id: parseInt(req.params.id) },
+      data: req.body
+    });
+    res.json(project);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update project' });
+  }
+});
+
+// Rate Card endpoints
+app.get('/api/projects/:projectId/rate-cards', async (req, res) => {
+  try {
+    const rateCards = await prisma.rateCard.findMany({
+      where: { projectId: parseInt(req.params.projectId) }
+    });
+    res.json(rateCards);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch rate cards' });
+  }
+});
+
+app.post('/api/projects/:projectId/rate-cards', async (req, res) => {
+  try {
+    const rateCard = await prisma.rateCard.create({
+      data: {
+        ...req.body,
+        projectId: parseInt(req.params.projectId)
+      }
+    });
+    res.json(rateCard);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create rate card' });
+  }
+});
+
+app.put('/api/rate-cards/:id', async (req, res) => {
+  try {
+    const rateCard = await prisma.rateCard.update({
+      where: { id: parseInt(req.params.id) },
+      data: req.body
+    });
+    res.json(rateCard);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update rate card' });
+  }
+});
+
+app.delete('/api/rate-cards/:id', async (req, res) => {
+  try {
+    await prisma.rateCard.delete({
+      where: { id: parseInt(req.params.id) }
+    });
+    res.json({ message: 'Rate card deleted' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete rate card' });
+  }
+});
+
+// Resource List endpoints
+app.get('/api/projects/:projectId/resource-lists', async (req, res) => {
+  try {
+    const resourceLists = await prisma.resourceList.findMany({
+      where: { projectId: parseInt(req.params.projectId) }
+    });
+    res.json(resourceLists);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch resource lists' });
+  }
+});
+
+app.post('/api/projects/:projectId/resource-lists', async (req, res) => {
+  try {
+    const resourceList = await prisma.resourceList.create({
+      data: {
+        ...req.body,
+        projectId: parseInt(req.params.projectId)
+      }
+    });
+    res.json(resourceList);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create resource list' });
+  }
+});
+
+app.put('/api/resource-lists/:id', async (req, res) => {
+  try {
+    const resourceList = await prisma.resourceList.update({
+      where: { id: parseInt(req.params.id) },
+      data: req.body
+    });
+    res.json(resourceList);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update resource list' });
+  }
+});
+
+app.delete('/api/resource-lists/:id', async (req, res) => {
+  try {
+    await prisma.resourceList.delete({
+      where: { id: parseInt(req.params.id) }
+    });
+    res.json({ message: 'Resource list deleted' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete resource list' });
+  }
+});
+
+// Resource Plan endpoints
+app.get('/api/projects/:projectId/resource-plans', async (req, res) => {
+  try {
+    const resourcePlans = await prisma.resourcePlan.findMany({
+      where: { projectId: parseInt(req.params.projectId) },
+      include: {
+        weeklyAllocations: {
+          orderBy: { weekNumber: 'asc' }
+        }
+      }
+    });
+    res.json(resourcePlans);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch resource plans' });
+  }
+});
+
+app.post('/api/projects/:projectId/resource-plans', async (req, res) => {
+  try {
+    const { weeklyAllocations, ...resourcePlanData } = req.body;
+    
+    const resourcePlan = await prisma.resourcePlan.create({
+      data: {
+        ...resourcePlanData,
+        projectId: parseInt(req.params.projectId),
+        weeklyAllocations: {
+          create: weeklyAllocations || []
+        }
+      },
+      include: {
+        weeklyAllocations: true
+      }
+    });
+    res.json(resourcePlan);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create resource plan' });
+  }
+});
+
+app.put('/api/resource-plans/:id', async (req, res) => {
+  try {
+    const { weeklyAllocations, ...resourcePlanData } = req.body;
+    
+    // Update resource plan
+    const resourcePlan = await prisma.resourcePlan.update({
+      where: { id: parseInt(req.params.id) },
+      data: resourcePlanData,
+      include: {
+        weeklyAllocations: true
+      }
+    });
+    
+    // Update weekly allocations if provided
+    if (weeklyAllocations) {
+      // Delete existing allocations
+      await prisma.weeklyAllocation.deleteMany({
+        where: { resourcePlanId: parseInt(req.params.id) }
+      });
+      
+      // Create new allocations
+      await prisma.weeklyAllocation.createMany({
+        data: weeklyAllocations.map((wa: any) => ({
+          ...wa,
+          resourcePlanId: parseInt(req.params.id)
+        }))
+      });
+      
+      // Fetch updated resource plan
+      const updatedResourcePlan = await prisma.resourcePlan.findUnique({
+        where: { id: parseInt(req.params.id) },
+        include: {
+          weeklyAllocations: {
+            orderBy: { weekNumber: 'asc' }
+          }
+        }
+      });
+      
+      return res.json(updatedResourcePlan);
+    }
+    
+    res.json(resourcePlan);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update resource plan' });
+  }
+});
+
+app.delete('/api/resource-plans/:id', async (req, res) => {
+  try {
+    await prisma.resourcePlan.delete({
+      where: { id: parseInt(req.params.id) }
+    });
+    res.json({ message: 'Resource plan deleted' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete resource plan' });
+  }
+});
+
+// Weekly Allocation endpoints
+app.get('/api/resource-plans/:resourcePlanId/weekly-allocations', async (req, res) => {
+  try {
+    const weeklyAllocations = await prisma.weeklyAllocation.findMany({
+      where: { resourcePlanId: parseInt(req.params.resourcePlanId) },
+      orderBy: { weekNumber: 'asc' }
+    });
+    res.json(weeklyAllocations);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch weekly allocations' });
+  }
+});
+
+app.post('/api/resource-plans/:resourcePlanId/weekly-allocations', async (req, res) => {
+  try {
+    const weeklyAllocation = await prisma.weeklyAllocation.create({
+      data: {
+        ...req.body,
+        resourcePlanId: parseInt(req.params.resourcePlanId)
+      }
+    });
+    res.json(weeklyAllocation);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create weekly allocation' });
+  }
+});
+
+app.put('/api/weekly-allocations/:id', async (req, res) => {
+  try {
+    const weeklyAllocation = await prisma.weeklyAllocation.update({
+      where: { id: parseInt(req.params.id) },
+      data: req.body
+    });
+    res.json(weeklyAllocation);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update weekly allocation' });
+  }
+});
+
+app.delete('/api/weekly-allocations/:id', async (req, res) => {
+  try {
+    await prisma.weeklyAllocation.delete({
+      where: { id: parseInt(req.params.id) }
+    });
+    res.json({ message: 'Weekly allocation deleted' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete weekly allocation' });
+  }
+});
+
+// Initialize default project and start server
+initializeDefaultProject().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}).catch(console.error);

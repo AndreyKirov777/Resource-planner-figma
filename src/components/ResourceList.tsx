@@ -5,18 +5,13 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Plus, Trash2 } from 'lucide-react';
-
-interface Resource {
-  id: string;
-  role: string;
-  name?: string;
-  intRate: number;
-  description?: string;
-}
+import { ResourceList as ResourceListType } from '../services/api';
 
 interface ResourceListProps {
-  resources: Resource[];
-  onResourcesChange: (resources: Resource[]) => void;
+  resourceLists: ResourceListType[];
+  onResourceListsChange: (resources: ResourceListType[]) => void;
+  onAddResourceList: (resource: Partial<ResourceListType>) => void;
+  onDeleteResourceList: (id: number) => void;
 }
 
 // Custom cell renderer component for the Actions column
@@ -40,15 +35,19 @@ const ActionsCellRenderer = (props: any) => {
   );
 };
 
-export function ResourceList({ resources, onResourcesChange }: ResourceListProps) {
+export function ResourceList({ 
+  resourceLists, 
+  onResourceListsChange, 
+  onAddResourceList,
+  onDeleteResourceList 
+}: ResourceListProps) {
   const [newRole, setNewRole] = useState('');
   const [newName, setNewName] = useState('');
   const [newRate, setNewRate] = useState('');
   const [newDescription, setNewDescription] = useState('');
 
-  const deleteResource = (id: string) => {
-    const updatedResources = resources.filter(resource => resource.id !== id);
-    onResourcesChange(updatedResources);
+  const deleteResource = (id: number) => {
+    onDeleteResourceList(id);
   };
 
   const columnDefs = useMemo(() => {
@@ -68,12 +67,12 @@ export function ResourceList({ resources, onResourcesChange }: ResourceListProps
         width: 200,
         editable: true,
         onCellValueChanged: (params: any) => {
-          const updatedResources = resources.map(resource =>
+          const updatedResources = resourceLists.map(resource =>
             resource.id === params.data.id
               ? { ...resource, role: params.newValue }
               : resource
           );
-          onResourcesChange(updatedResources);
+          onResourceListsChange(updatedResources);
         }
       },
       {
@@ -82,12 +81,12 @@ export function ResourceList({ resources, onResourcesChange }: ResourceListProps
         width: 150,
         editable: true,
         onCellValueChanged: (params: any) => {
-          const updatedResources = resources.map(resource =>
+          const updatedResources = resourceLists.map(resource =>
             resource.id === params.data.id
               ? { ...resource, name: params.newValue }
               : resource
           );
-          onResourcesChange(updatedResources);
+          onResourceListsChange(updatedResources);
         }
       },
       {
@@ -97,12 +96,12 @@ export function ResourceList({ resources, onResourcesChange }: ResourceListProps
         editable: true,
         valueFormatter: (params: any) => `$${params.value.toFixed(2)}`,
         onCellValueChanged: (params: any) => {
-          const updatedResources = resources.map(resource =>
+          const updatedResources = resourceLists.map(resource =>
             resource.id === params.data.id
               ? { ...resource, intRate: parseFloat(params.newValue) || 0 }
               : resource
           );
-          onResourcesChange(updatedResources);
+          onResourceListsChange(updatedResources);
         }
       },
       {
@@ -117,12 +116,12 @@ export function ResourceList({ resources, onResourcesChange }: ResourceListProps
         width: 250,
         editable: true,
         onCellValueChanged: (params: any) => {
-          const updatedResources = resources.map(resource =>
+          const updatedResources = resourceLists.map(resource =>
             resource.id === params.data.id
               ? { ...resource, description: params.newValue }
               : resource
           );
-          onResourcesChange(updatedResources);
+          onResourceListsChange(updatedResources);
         }
       }
     ];
@@ -131,29 +130,28 @@ export function ResourceList({ resources, onResourcesChange }: ResourceListProps
     (window as any).deleteResource = deleteResource;
 
     return [actionsColumn, ...otherColumns];
-  }, [resources, onResourcesChange]);
+  }, [resourceLists, onResourceListsChange, deleteResource]);
 
   const addResource = () => {
     if (!newRole.trim() || !newRate.trim()) return;
     
-    const newResource: Resource = {
-      id: Date.now().toString(),
+    const newResource: Partial<ResourceListType> = {
       role: newRole.trim(),
       name: newName.trim() || undefined,
       intRate: parseFloat(newRate) || 0,
       description: newDescription.trim() || undefined
     };
     
-    onResourcesChange([...resources, newResource]);
+    onAddResourceList(newResource);
     setNewRole('');
     setNewName('');
     setNewRate('');
     setNewDescription('');
   };
 
-  const totalResources = resources.length;
-  const averageRate = resources.length > 0 
-    ? resources.reduce((sum, r) => sum + r.intRate, 0) / resources.length 
+  const totalResources = resourceLists.length;
+  const averageRate = resourceLists.length > 0 
+    ? resourceLists.reduce((sum, r) => sum + r.intRate, 0) / resourceLists.length 
     : 0;
 
   return (
@@ -217,7 +215,7 @@ export function ResourceList({ resources, onResourcesChange }: ResourceListProps
           <div className="ag-theme-alpine" style={{ height: '500px', width: '100%' }}>
             <AgGridReact
               theme="legacy"
-              rowData={resources}
+              rowData={resourceLists}
               columnDefs={columnDefs}
               defaultColDef={{
                 sortable: true,

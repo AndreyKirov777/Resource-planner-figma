@@ -4,125 +4,25 @@ import { ColDef } from 'ag-grid-community';
 import { Button } from './ui/button';
 import { Plus } from 'lucide-react';
 import * as ExcelJS from 'exceljs';
+import { RateCard as RateCardType } from '../services/api';
 
 // Import AG Grid styles
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 
-interface RateCardRow {
-  role: string;
-  namingInPM: string;
-  discipline: string;
-  description: string;
-  ukraine: number;
-  easternEurope: number;
-  asiaGE: number;
-  asiaARMKZ: number;
-  latam: number;
-  mexico: number;
-  india: number;
-  newYork: number;
-  london: number;
-}
-
 interface RateCardProps {
-  resources: any[];
+  rateCards: RateCardType[];
+  onRateCardsChange: (rateCards: RateCardType[]) => void;
+  onAddRateCard: (rateCard: Partial<RateCardType>) => void;
+  onDeleteRateCard: (id: number) => void;
 }
 
-export function RateCard({ resources }: RateCardProps) {
-  const [rowData, setRowData] = useState<RateCardRow[]>([
-    {
-      role: 'Senior Developer',
-      namingInPM: 'Dev Senior',
-      discipline: 'Development',
-      description: 'Senior software developer with 5+ years experience',
-      ukraine: 120,
-      easternEurope: 110,
-      asiaGE: 85,
-      asiaARMKZ: 75,
-      latam: 65,
-      mexico: 70,
-      india: 45,
-      newYork: 120,
-      london: 110
-    },
-    {
-      role: 'Project Manager',
-      namingInPM: 'PM Lead',
-      discipline: 'Management',
-      description: 'Experienced project manager for complex projects',
-      ukraine: 140,
-      easternEurope: 130,
-      asiaGE: 95,
-      asiaARMKZ: 85,
-      latam: 75,
-      mexico: 80,
-      india: 55,
-      newYork: 140,
-      london: 130
-    },
-    {
-      role: 'UX/UI Designer',
-      namingInPM: 'Designer',
-      discipline: 'Design',
-      description: 'User experience and interface design specialist',
-      ukraine: 100,
-      easternEurope: 90,
-      asiaGE: 70,
-      asiaARMKZ: 60,
-      latam: 50,
-      mexico: 55,
-      india: 35,
-      newYork: 100,
-      london: 90
-    },
-    {
-      role: 'QA Engineer',
-      namingInPM: 'QA',
-      discipline: 'Testing',
-      description: 'Quality assurance and testing specialist',
-      ukraine: 80,
-      easternEurope: 70,
-      asiaGE: 60,
-      asiaARMKZ: 50,
-      latam: 40,
-      mexico: 45,
-      india: 25,
-      newYork: 80,
-      london: 70
-    },
-    {
-      role: 'DevOps Engineer',
-      namingInPM: 'DevOps',
-      discipline: 'Infrastructure',
-      description: 'DevOps and infrastructure specialist',
-      ukraine: 110,
-      easternEurope: 100,
-      asiaGE: 80,
-      asiaARMKZ: 70,
-      latam: 60,
-      mexico: 65,
-      india: 40,
-      newYork: 110,
-      london: 100
-    },
-    {
-      role: 'Data Scientist',
-      namingInPM: 'Data Sci',
-      discipline: 'Data',
-      description: 'Data science and analytics specialist',
-      ukraine: 130,
-      easternEurope: 120,
-      asiaGE: 90,
-      asiaARMKZ: 80,
-      latam: 70,
-      mexico: 75,
-      india: 50,
-      newYork: 130,
-      london: 120
-    }
-  ]);
-
+export function RateCard({ 
+  rateCards, 
+  onRateCardsChange, 
+  onAddRateCard,
+  onDeleteRateCard 
+}: RateCardProps) {
   // Currency formatter for rate columns
   const currencyFormatter = (params: any) => {
     if (params.value != null) {
@@ -131,27 +31,54 @@ export function RateCard({ resources }: RateCardProps) {
     return '';
   };
 
-  const columnDefs: ColDef<RateCardRow>[] = [
+  const columnDefs: ColDef<RateCardType>[] = [
     {
       headerName: 'Role',
       field: 'role',
       sortable: true,
       filter: true,
-      resizable: true
+      resizable: true,
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, role: params.newValue }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     },
     {
       headerName: 'Naming in PM',
       field: 'namingInPM',
       sortable: true,
       filter: true,
-      resizable: true
+      resizable: true,
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, namingInPM: params.newValue }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     },
     {
       headerName: 'Discipline',
       field: 'discipline',
       sortable: true,
       filter: true,
-      resizable: true
+      resizable: true,
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, discipline: params.newValue }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     },
     {
       headerName: 'Description',
@@ -159,7 +86,16 @@ export function RateCard({ resources }: RateCardProps) {
       sortable: true,
       filter: true,
       resizable: true,
-      flex: 1
+      flex: 1,
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, description: params.newValue }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     },
     {
       headerName: 'Ukraine',
@@ -168,7 +104,16 @@ export function RateCard({ resources }: RateCardProps) {
       filter: true,
       resizable: true,
       valueFormatter: currencyFormatter,
-      type: 'numericColumn'
+      type: 'numericColumn',
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, ukraine: parseFloat(params.newValue) || 0 }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     },
     {
       headerName: 'Eastern Europe',
@@ -177,7 +122,16 @@ export function RateCard({ resources }: RateCardProps) {
       filter: true,
       resizable: true,
       valueFormatter: currencyFormatter,
-      type: 'numericColumn'
+      type: 'numericColumn',
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, easternEurope: parseFloat(params.newValue) || 0 }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     },
     {
       headerName: 'Asia (GE)',
@@ -186,7 +140,16 @@ export function RateCard({ resources }: RateCardProps) {
       filter: true,
       resizable: true,
       valueFormatter: currencyFormatter,
-      type: 'numericColumn'
+      type: 'numericColumn',
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, asiaGE: parseFloat(params.newValue) || 0 }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     },
     {
       headerName: 'Asia (ARM, KZ)',
@@ -195,7 +158,16 @@ export function RateCard({ resources }: RateCardProps) {
       filter: true,
       resizable: true,
       valueFormatter: currencyFormatter,
-      type: 'numericColumn'
+      type: 'numericColumn',
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, asiaARMKZ: parseFloat(params.newValue) || 0 }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     },
     {
       headerName: 'LATAM',
@@ -204,7 +176,16 @@ export function RateCard({ resources }: RateCardProps) {
       filter: true,
       resizable: true,
       valueFormatter: currencyFormatter,
-      type: 'numericColumn'
+      type: 'numericColumn',
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, latam: parseFloat(params.newValue) || 0 }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     },
     {
       headerName: 'Mexico',
@@ -213,7 +194,16 @@ export function RateCard({ resources }: RateCardProps) {
       filter: true,
       resizable: true,
       valueFormatter: currencyFormatter,
-      type: 'numericColumn'
+      type: 'numericColumn',
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, mexico: parseFloat(params.newValue) || 0 }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     },
     {
       headerName: 'India',
@@ -222,7 +212,16 @@ export function RateCard({ resources }: RateCardProps) {
       filter: true,
       resizable: true,
       valueFormatter: currencyFormatter,
-      type: 'numericColumn'
+      type: 'numericColumn',
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, india: parseFloat(params.newValue) || 0 }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     },
     {
       headerName: 'New York',
@@ -231,7 +230,16 @@ export function RateCard({ resources }: RateCardProps) {
       filter: true,
       resizable: true,
       valueFormatter: currencyFormatter,
-      type: 'numericColumn'
+      type: 'numericColumn',
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, newYork: parseFloat(params.newValue) || 0 }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     },
     {
       headerName: 'London',
@@ -240,7 +248,16 @@ export function RateCard({ resources }: RateCardProps) {
       filter: true,
       resizable: true,
       valueFormatter: currencyFormatter,
-      type: 'numericColumn'
+      type: 'numericColumn',
+      editable: true,
+      onCellValueChanged: (params: any) => {
+        const updatedRateCards = rateCards.map(rateCard =>
+          rateCard.id === params.data.id
+            ? { ...rateCard, london: parseFloat(params.newValue) || 0 }
+            : rateCard
+        );
+        onRateCardsChange(updatedRateCards);
+      }
     }
   ];
 
@@ -270,13 +287,13 @@ export function RateCard({ resources }: RateCardProps) {
             return;
           }
           
-          const importedData: RateCardRow[] = [];
+          const importedData: Partial<RateCardType>[] = [];
           
           // Start from row 2 (assuming row 1 is headers)
           worksheet.eachRow((row, rowNumber) => {
             if (rowNumber <= 2) return; // Skip header row
             
-            const rowData: RateCardRow = {
+            const rowData: Partial<RateCardType> = {
               role: row.getCell('A').value?.toString() || '',
               namingInPM: row.getCell('B').value?.toString() || '',
               discipline: row.getCell('C').value?.toString() || '',
@@ -293,13 +310,16 @@ export function RateCard({ resources }: RateCardProps) {
             };
             
             // Only add rows that have at least a role name
-            if (rowData.role.trim()) {
+            if (rowData.role?.trim()) {
               importedData.push(rowData);
             }
           });
           
           if (importedData.length > 0) {
-            setRowData(importedData);
+            // Add each imported rate card to the database
+            for (const rateCardData of importedData) {
+              onAddRateCard(rateCardData);
+            }
             alert(`Successfully imported ${importedData.length} rate card entries`);
           } else {
             alert('No valid data found in the Excel file');
@@ -330,7 +350,7 @@ export function RateCard({ resources }: RateCardProps) {
         </Button>
       <div className="ag-theme-alpine" style={{ height: 600, width: '100%' }}>
         <AgGridReact
-          rowData={rowData}
+          rowData={rateCards}
           columnDefs={columnDefs}
           pagination={true}
           paginationPageSize={20}

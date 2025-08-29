@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
@@ -6,42 +6,238 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { ResourcePlan } from './components/ResourcePlan';
 import { ResourceList } from './components/ResourceList';
 import { RateCard } from './components/RateCard';
+import { api, Project, ResourceList as ResourceListType, RateCard as RateCardType, ResourcePlan as ResourcePlanType } from './services/api';
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-interface Resource {
-  id: string;
-  role: string;
-  name?: string;
-  intRate: number;
-  description?: string;
-}
-
-const initialResources: Resource[] = [
-  { id: '1', role: 'Application Development', name: 'John Smith', intRate: 25, description: 'General application development tasks' },
-  { id: '2', role: 'Project Manager', name: 'Sarah Johnson', intRate: 27, description: 'Project coordination and management' },
-  { id: '3', role: 'Frontend Engineer', name: 'Mike Chen', intRate: 25, description: 'Frontend development and UI implementation' },
-  { id: '4', role: 'UX/UI Designer', name: 'Emily Davis', intRate: 20, description: 'User experience and interface design' },
-  { id: '5', role: 'Senior Backend Engineer', name: 'David Wilson', intRate: 31, description: 'Senior-level backend development' },
-  { id: '6', role: 'Senior Frontend Engineer', name: 'Lisa Anderson', intRate: 29, description: 'Senior-level frontend development' },
-  { id: '7', role: 'Principal Frontend Engineer', name: 'Robert Taylor', intRate: 34, description: 'Principal-level frontend architecture' },
-  { id: '8', role: 'QA Engineer', name: 'Jennifer Brown', intRate: 13, description: 'Quality assurance and testing' }
-];
-
 export default function App() {
-  const [resources, setResources] = useState<Resource[]>(initialResources);
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [resourceLists, setResourceLists] = useState<ResourceListType[]>([]);
+  const [rateCards, setRateCards] = useState<RateCardType[]>([]);
+  const [resourcePlans, setResourcePlans] = useState<ResourcePlanType[]>([]);
   const [activeTab, setActiveTab] = useState('resource-plan');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleResourcesChange = (updatedResources: Resource[]) => {
-    setResources(updatedResources);
+  // Load initial data
+  useEffect(() => {
+    loadProjectData();
+  }, []);
+
+  const loadProjectData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Get the first project (or create default)
+      const projects = await api.getProjects();
+      let project: Project;
+      
+      if (projects.length === 0) {
+        // Create default project if none exists
+        project = await api.createProject({
+          name: 'Default Project',
+          description: 'Default project for resource planning',
+          daysInFTE: 20,
+          clientCurrency: 'EUR',
+          exchangeRate: 0.89
+        });
+      } else {
+        project = projects[0];
+      }
+      
+      setCurrentProject(project);
+      
+      // Load all related data
+      const [resourceListsData, rateCardsData, resourcePlansData] = await Promise.all([
+        api.getResourceLists(project.id),
+        api.getRateCards(project.id),
+        api.getResourcePlans(project.id)
+      ]);
+      
+      setResourceLists(resourceListsData);
+      setRateCards(rateCardsData);
+      setResourcePlans(resourcePlansData);
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load project data');
+      console.error('Error loading project data:', err);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleResourceListsChange = async (updatedResourceLists: ResourceListType[]) => {
+    try {
+      setResourceLists(updatedResourceLists);
+      
+      // Update the database for any changes
+      for (const resource of updatedResourceLists) {
+        if (resource.id) {
+          await api.updateResourceList(resource.id, resource);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update resource lists');
+      console.error('Error updating resource lists:', err);
+    }
+  };
+
+  const handleAddResourceList = async (newResource: Partial<ResourceListType>) => {
+    if (!currentProject) return;
+    
+    try {
+      const createdResource = await api.createResourceList(currentProject.id, newResource);
+      setResourceLists(prev => [...prev, createdResource]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add resource');
+      console.error('Error adding resource:', err);
+    }
+  };
+
+  const handleDeleteResourceList = async (id: number) => {
+    try {
+      await api.deleteResourceList(id);
+      setResourceLists(prev => prev.filter(r => r.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete resource');
+      console.error('Error deleting resource:', err);
+    }
+  };
+
+  const handleRateCardsChange = async (updatedRateCards: RateCardType[]) => {
+    try {
+      setRateCards(updatedRateCards);
+      
+      // Update the database for any changes
+      for (const rateCard of updatedRateCards) {
+        if (rateCard.id) {
+          await api.updateRateCard(rateCard.id, rateCard);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update rate cards');
+      console.error('Error updating rate cards:', err);
+    }
+  };
+
+  const handleAddRateCard = async (newRateCard: Partial<RateCardType>) => {
+    if (!currentProject) return;
+    
+    try {
+      const createdRateCard = await api.createRateCard(currentProject.id, newRateCard);
+      setRateCards(prev => [...prev, createdRateCard]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add rate card');
+      console.error('Error adding rate card:', err);
+    }
+  };
+
+  const handleDeleteRateCard = async (id: number) => {
+    try {
+      await api.deleteRateCard(id);
+      setRateCards(prev => prev.filter(r => r.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete rate card');
+      console.error('Error deleting rate card:', err);
+    }
+  };
+
+  const handleResourcePlansChange = async (updatedResourcePlans: ResourcePlanType[]) => {
+    try {
+      setResourcePlans(updatedResourcePlans);
+      
+      // Update the database for any changes
+      for (const resourcePlan of updatedResourcePlans) {
+        if (resourcePlan.id) {
+          await api.updateResourcePlan(resourcePlan.id, resourcePlan);
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update resource plans');
+      console.error('Error updating resource plans:', err);
+    }
+  };
+
+  const handleAddResourcePlan = async (newResourcePlan: Partial<ResourcePlanType>) => {
+    if (!currentProject) return;
+    
+    try {
+      const createdResourcePlan = await api.createResourcePlan(currentProject.id, newResourcePlan);
+      setResourcePlans(prev => [...prev, createdResourcePlan]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add resource plan');
+      console.error('Error adding resource plan:', err);
+    }
+  };
+
+  const handleDeleteResourcePlan = async (id: number) => {
+    try {
+      await api.deleteResourcePlan(id);
+      setResourcePlans(prev => prev.filter(r => r.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete resource plan');
+      console.error('Error deleting resource plan:', err);
+    }
+  };
+
+  const handleProjectSettingsChange = async (settings: Partial<Project>) => {
+    if (!currentProject) return;
+    
+    try {
+      const updatedProject = await api.updateProject(currentProject.id, settings);
+      setCurrentProject(updatedProject);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update project settings');
+      console.error('Error updating project settings:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading project data...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div className="text-red-800 font-medium">Error: {error}</div>
+          <button 
+            onClick={loadProjectData}
+            className="mt-2 text-red-600 hover:text-red-800 underline"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentProject) {
+    return (
+      <div className="p-6">
+        <div className="text-center">
+          <div className="text-lg">No project found</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
       <div className="mb-6">
         <h1>Resource Planning Application</h1>
-        <p className="text-muted-foreground">Manage your resources and plan project allocations</p>
+        <p className="text-muted-foreground">Project: {currentProject.name}</p>
+        {currentProject.description && (
+          <p className="text-muted-foreground">{currentProject.description}</p>
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -52,18 +248,33 @@ export default function App() {
         </TabsList>
         
         <TabsContent value="resource-plan" className="mt-6">
-          <ResourcePlan resources={resources} />
+          <ResourcePlan 
+            project={currentProject}
+            resourceLists={resourceLists}
+            resourcePlans={resourcePlans}
+            onResourcePlansChange={handleResourcePlansChange}
+            onAddResourcePlan={handleAddResourcePlan}
+            onDeleteResourcePlan={handleDeleteResourcePlan}
+            onProjectSettingsChange={handleProjectSettingsChange}
+          />
         </TabsContent>
         
         <TabsContent value="resource-list" className="mt-6">
           <ResourceList 
-            resources={resources} 
-            onResourcesChange={handleResourcesChange} 
+            resourceLists={resourceLists}
+            onResourceListsChange={handleResourceListsChange}
+            onAddResourceList={handleAddResourceList}
+            onDeleteResourceList={handleDeleteResourceList}
           />
         </TabsContent>
 
         <TabsContent value="rate-card" className="mt-6">
-          <RateCard resources={resources} />
+          <RateCard 
+            rateCards={rateCards}
+            onRateCardsChange={handleRateCardsChange}
+            onAddRateCard={handleAddRateCard}
+            onDeleteRateCard={handleDeleteRateCard}
+          />
         </TabsContent>
       </Tabs>
     </div>

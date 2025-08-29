@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -6,26 +6,16 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Plus, X } from 'lucide-react';
-
-interface ResourceRow {
-  id: string;
-  role: string;
-  name: string;
-  intHourlyRate: number;
-  clientHourlyRate: number;
-  [key: string]: any; // For dynamic week columns
-}
-
-interface Resource {
-  id: string;
-  role: string;
-  name?: string;
-  intRate: number;
-  description?: string;
-}
+import { Project, ResourceList as ResourceListType, ResourcePlan as ResourcePlanType, WeeklyAllocation } from '../services/api';
 
 interface ResourcePlanProps {
-  resources: Resource[];
+  project: Project;
+  resourceLists: ResourceListType[];
+  resourcePlans: ResourcePlanType[];
+  onResourcePlansChange: (resourcePlans: ResourcePlanType[]) => void;
+  onAddResourcePlan: (resourcePlan: Partial<ResourcePlanType>) => void;
+  onDeleteResourcePlan: (id: number) => void;
+  onProjectSettingsChange: (settings: Partial<Project>) => void;
 }
 
 // Custom cell renderer component for the Actions column
@@ -49,53 +39,53 @@ const ActionsCellRenderer = (props: any) => {
   );
 };
 
-export function ResourcePlan({ resources }: ResourcePlanProps) {
-  const [projectSettings, setProjectSettings] = useState({
-    daysInFTE: 20,
-    clientCurrency: 'EUR',
-    exchangeRate: 0.89,
-    projectMargin: 65
-  });
+export function ResourcePlan({ 
+  project, 
+  resourceLists, 
+  resourcePlans, 
+  onResourcePlansChange, 
+  onAddResourcePlan,
+  onDeleteResourcePlan,
+  onProjectSettingsChange 
+}: ResourcePlanProps) {
+  const [weekNumbers, setWeekNumbers] = useState<number[]>([]);
 
-  const [weekNumbers, setWeekNumbers] = useState([1, 2, 3, 4, 5, 6, 7, 8]);
-  const [rowData, setRowData] = useState<ResourceRow[]>([
-    {
-      id: '1',
-      role: 'Application Development',
-      name: '',
-      intHourlyRate: 25,
-      clientHourlyRate: 43,
-      week1: 50, week2: 50, week3: 50, week4: 50, week5: 50, week6: 50, week7: 50, week8: 50
-    },
-    {
-      id: '2',
-      role: 'Project Manager',
-      name: '',
-      intHourlyRate: 27,
-      clientHourlyRate: 49,
-      week1: 50, week2: 50, week3: 50, week4: 0, week5: 0, week6: 0, week7: 0, week8: 0
-    },
-    {
-      id: '3',
-      role: 'Frontend Engineer',
-      name: '',
-      intHourlyRate: 25,
-      clientHourlyRate: 32,
-      week1: 50, week2: 50, week3: 50, week4: 50, week5: 0, week6: 0, week7: 0, week8: 0
-    },
-    {
-      id: '4',
-      role: 'UX/UI Designer',
-      name: '',
-      intHourlyRate: 20,
-      clientHourlyRate: 32,
-      week1: 100, week2: 100, week3: 100, week4: 100, week5: 100, week6: 100, week7: 100, week8: 100
-    }
-  ]);
+  // Initialize week numbers from existing resource plans
+  useEffect(() => {
+    const allWeekNumbers = new Set<number>();
+    resourcePlans.forEach(plan => {
+      plan.weeklyAllocations.forEach(allocation => {
+        allWeekNumbers.add(allocation.weekNumber);
+      });
+    });
+    const sortedWeekNumbers = Array.from(allWeekNumbers).sort((a, b) => a - b);
+    setWeekNumbers(sortedWeekNumbers.length > 0 ? sortedWeekNumbers : [1, 2, 3, 4, 5, 6, 7, 8]);
+  }, [resourcePlans]);
 
-  const currencySymbol = projectSettings.clientCurrency === 'EUR' ? '€' : '$';
+  const currencySymbol = project.clientCurrency === 'EUR' ? '€' : '$';
 
-  const calculateEstimatedEfforts = (row: ResourceRow): number => {
+  // Convert resource plans to row data format for AG Grid
+  const rowData = useMemo(() => {
+    return resourcePlans.map(plan => {
+      const row: any = {
+        id: plan.id,
+        role: plan.role,
+        name: plan.name || '',
+        intHourlyRate: plan.intHourlyRate,
+        clientHourlyRate: plan.clientHourlyRate
+      };
+
+      // Add week allocations
+      weekNumbers.forEach(weekNum => {
+        const allocation = plan.weeklyAllocations.find(wa => wa.weekNumber === weekNum);
+        row[`week${weekNum}`] = allocation?.allocation || 0;
+      });
+
+      return row;
+    });
+  }, [resourcePlans, weekNumbers]);
+
+  const calculateEstimatedEfforts = (row: any): number => {
     let totalWeeks = 0;
     weekNumbers.forEach(weekNum => {
       totalWeeks += (row[`week${weekNum}`] || 0) / 100;
@@ -103,19 +93,19 @@ export function ResourcePlan({ resources }: ResourcePlanProps) {
     return totalWeeks * 40; // 40 hours per week
   };
 
-  const calculateTotalIntCost = (row: ResourceRow): number => {
+  const calculateTotalIntCost = (row: any): number => {
     const hours = calculateEstimatedEfforts(row);
     return hours * row.intHourlyRate;
   };
 
-  const calculateTotalPrice = (row: ResourceRow): number => {
+  const calculateTotalPrice = (row: any): number => {
     const hours = calculateEstimatedEfforts(row);
     return hours * row.clientHourlyRate;
   };
 
-  const calculateMargin = (row: ResourceRow): number => {
+  const calculateMargin = (row: any): number => {
     const clientRate = row.clientHourlyRate;
-    const intRateInClientCurrency = row.intHourlyRate / projectSettings.exchangeRate;
+    const intRateInClientCurrency = row.intHourlyRate / project.exchangeRate;
     return ((clientRate - intRateInClientCurrency) / clientRate) * 100;
   };
 
@@ -125,34 +115,51 @@ export function ResourcePlan({ resources }: ResourcePlanProps) {
     
     const renumberedWeeks = newWeekNumbers.map((_, index) => index + 1);
     
-    setRowData(prevData => 
-      prevData.map(row => {
-        const newRow: ResourceRow = {
-          id: row.id,
-          role: row.role,
-          name: row.name,
-          intHourlyRate: row.intHourlyRate,
-          clientHourlyRate: row.clientHourlyRate
-        };
-        
-        renumberedWeeks.forEach((newWeekNum, index) => {
-          if (index === afterWeekPosition) {
-            newRow[`week${newWeekNum}`] = 0;
-          } else if (index < afterWeekPosition) {
-            const oldWeekNum = weekNumbers[index];
-            newRow[`week${newWeekNum}`] = row[`week${oldWeekNum}`] || 0;
-          } else {
-            const oldWeekNum = weekNumbers[index - 1];
-            newRow[`week${newWeekNum}`] = row[`week${oldWeekNum}`] || 0;
+    // Update all resource plans with new week structure
+    const updatedResourcePlans = resourcePlans.map(plan => {
+      const newWeeklyAllocations: WeeklyAllocation[] = [];
+      
+      renumberedWeeks.forEach((newWeekNum, index) => {
+        if (index === afterWeekPosition) {
+          // New week with 0 allocation - create a temporary allocation
+          newWeeklyAllocations.push({
+            id: 0, // Temporary ID, will be replaced by database
+            weekNumber: newWeekNum,
+            allocation: 0,
+            resourcePlanId: plan.id,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+        } else if (index < afterWeekPosition) {
+          const oldWeekNum = weekNumbers[index];
+          const existingAllocation = plan.weeklyAllocations.find(wa => wa.weekNumber === oldWeekNum);
+          if (existingAllocation) {
+            newWeeklyAllocations.push({
+              ...existingAllocation,
+              weekNumber: newWeekNum
+            });
           }
-        });
-        
-        return newRow;
-      })
-    );
+        } else {
+          const oldWeekNum = weekNumbers[index - 1];
+          const existingAllocation = plan.weeklyAllocations.find(wa => wa.weekNumber === oldWeekNum);
+          if (existingAllocation) {
+            newWeeklyAllocations.push({
+              ...existingAllocation,
+              weekNumber: newWeekNum
+            });
+          }
+        }
+      });
+      
+      return {
+        ...plan,
+        weeklyAllocations: newWeeklyAllocations
+      };
+    });
     
+    onResourcePlansChange(updatedResourcePlans);
     setWeekNumbers(renumberedWeeks);
-  }, [weekNumbers]);
+  }, [weekNumbers, resourcePlans, onResourcePlansChange]);
 
   const removeSpecificWeek = useCallback((weekToRemove: number) => {
     if (weekNumbers.length <= 1) return;
@@ -163,32 +170,35 @@ export function ResourcePlan({ resources }: ResourcePlanProps) {
     const newWeekNumbers = weekNumbers.filter(week => week !== weekToRemove);
     const renumberedWeeks = newWeekNumbers.map((_, index) => index + 1);
     
-    setRowData(prevData => 
-      prevData.map(row => {
-        const newRow: ResourceRow = {
-          id: row.id,
-          role: row.role,
-          name: row.name,
-          intHourlyRate: row.intHourlyRate,
-          clientHourlyRate: row.clientHourlyRate
-        };
-        
-        renumberedWeeks.forEach((newWeekNum, index) => {
-          const originalIndex = index < weekPosition ? index : index + 1;
-          const oldWeekNum = weekNumbers[originalIndex];
-          newRow[`week${newWeekNum}`] = row[`week${oldWeekNum}`] || 0;
-        });
-        
-        return newRow;
-      })
-    );
+    // Update all resource plans with new week structure
+    const updatedResourcePlans = resourcePlans.map(plan => {
+      const newWeeklyAllocations: WeeklyAllocation[] = [];
+      
+      renumberedWeeks.forEach((newWeekNum, index) => {
+        const originalIndex = index < weekPosition ? index : index + 1;
+        const oldWeekNum = weekNumbers[originalIndex];
+        const existingAllocation = plan.weeklyAllocations.find(wa => wa.weekNumber === oldWeekNum);
+        if (existingAllocation) {
+          newWeeklyAllocations.push({
+            ...existingAllocation,
+            weekNumber: newWeekNum
+          });
+        }
+      });
+      
+      return {
+        ...plan,
+        weeklyAllocations: newWeeklyAllocations
+      };
+    });
     
+    onResourcePlansChange(updatedResourcePlans);
     setWeekNumbers(renumberedWeeks);
-  }, [weekNumbers]);
+  }, [weekNumbers, resourcePlans, onResourcePlansChange]);
 
-  const removeRole = useCallback((roleId: string) => {
-    setRowData(prevData => prevData.filter(row => row.id !== roleId));
-  }, []);
+  const removeRole = useCallback((roleId: number) => {
+    onDeleteResourcePlan(roleId);
+  }, [onDeleteResourcePlan]);
 
   const columnDefs = useMemo(() => {
     // Actions column - moved to first position
@@ -210,14 +220,22 @@ export function ResourcePlan({ resources }: ResourcePlanProps) {
         editable: true,
         cellEditor: 'agSelectCellEditor',
         cellEditorParams: {
-          values: resources.map(r => r.role)
+          values: resourceLists.map(r => r.role)
         },
         onCellValueChanged: (params: any) => {
-          const selectedResource = resources.find(r => r.role === params.newValue);
+          const selectedResource = resourceLists.find(r => r.role === params.newValue);
           if (selectedResource) {
             params.node.setDataValue('intHourlyRate', selectedResource.intRate);
             params.node.setDataValue('name', selectedResource.name || '');
           }
+          
+          // Update the resource plan in the database
+          const updatedResourcePlans = resourcePlans.map(plan =>
+            plan.id === params.data.id
+              ? { ...plan, role: params.newValue }
+              : plan
+          );
+          onResourcePlansChange(updatedResourcePlans);
         }
       },
       {
@@ -225,14 +243,30 @@ export function ResourcePlan({ resources }: ResourcePlanProps) {
         field: 'name',
         width: 150,
         pinned: 'left',
-        editable: true
+        editable: true,
+        onCellValueChanged: (params: any) => {
+          const updatedResourcePlans = resourcePlans.map(plan =>
+            plan.id === params.data.id
+              ? { ...plan, name: params.newValue }
+              : plan
+          );
+          onResourcePlansChange(updatedResourcePlans);
+        }
       },
       {
         headerName: 'Int hourly rate, $/h',
         field: 'intHourlyRate',
         width: 140,
         editable: true,
-        valueFormatter: (params: any) => `$${params.value.toFixed(2)}`
+        valueFormatter: (params: any) => `$${params.value.toFixed(2)}`,
+        onCellValueChanged: (params: any) => {
+          const updatedResourcePlans = resourcePlans.map(plan =>
+            plan.id === params.data.id
+              ? { ...plan, intHourlyRate: parseFloat(params.newValue) || 0 }
+              : plan
+          );
+          onResourcePlansChange(updatedResourcePlans);
+        }
       },
       {
         headerName: 'Int daily rate, $',
@@ -245,7 +279,15 @@ export function ResourcePlan({ resources }: ResourcePlanProps) {
         field: 'clientHourlyRate',
         width: 160,
         editable: true,
-        valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`
+        valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`,
+        onCellValueChanged: (params: any) => {
+          const updatedResourcePlans = resourcePlans.map(plan =>
+            plan.id === params.data.id
+              ? { ...plan, clientHourlyRate: parseFloat(params.newValue) || 0 }
+              : plan
+          );
+          onResourcePlansChange(updatedResourcePlans);
+        }
       },
       {
         headerName: `Daily rate (Client Rate)`,
@@ -338,6 +380,21 @@ export function ResourcePlan({ resources }: ResourcePlanProps) {
       valueSetter: (params: any) => {
         const value = parseInt(params.newValue) || 0;
         params.data[`week${weekNum}`] = Math.max(0, Math.min(100, value));
+        
+        // Update the weekly allocation in the database
+        const updatedResourcePlans = resourcePlans.map(plan => {
+          if (plan.id === params.data.id) {
+            const updatedAllocations = plan.weeklyAllocations.map(wa =>
+              wa.weekNumber === weekNum
+                ? { ...wa, allocation: value }
+                : wa
+            );
+            return { ...plan, weeklyAllocations: updatedAllocations };
+          }
+          return plan;
+        });
+        onResourcePlansChange(updatedResourcePlans);
+        
         return true;
       }
     }));
@@ -369,43 +426,53 @@ export function ResourcePlan({ resources }: ResourcePlanProps) {
     (window as any).removePlanRole = removeRole;
 
     return [actionsColumn, ...baseColumns, ...weekColumns, ...calculationColumns];
-  }, [weekNumbers, currencySymbol, projectSettings.exchangeRate, removeSpecificWeek, insertWeekAfter, resources, removeRole]);
+  }, [weekNumbers, currencySymbol, project.exchangeRate, removeSpecificWeek, insertWeekAfter, resourceLists, removeRole, resourcePlans, onResourcePlansChange]);
 
   const addWeek = useCallback(() => {
     const newWeekNumber = Math.max(...weekNumbers) + 1;
     setWeekNumbers(prev => [...prev, newWeekNumber]);
-    setRowData(prevData => 
-      prevData.map(row => ({
-        ...row,
-        [`week${newWeekNumber}`]: 0
-      }))
-    );
-  }, [weekNumbers]);
+    
+    // Add the new week to all resource plans
+    const updatedResourcePlans = resourcePlans.map(plan => ({
+      ...plan,
+      weeklyAllocations: [
+        ...plan.weeklyAllocations,
+        {
+          id: 0, // Temporary ID, will be replaced by database
+          weekNumber: newWeekNumber,
+          allocation: 0,
+          resourcePlanId: plan.id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ]
+    }));
+    onResourcePlansChange(updatedResourcePlans);
+  }, [weekNumbers, resourcePlans, onResourcePlansChange]);
 
   const addRole = useCallback(() => {
-    const newRow: ResourceRow = {
-      id: Date.now().toString(),
+    const newResourcePlan: Partial<ResourcePlanType> = {
       role: '',
       name: '',
       intHourlyRate: 0,
-      clientHourlyRate: 0
+      clientHourlyRate: 0,
+      weeklyAllocations: weekNumbers.map(weekNum => ({
+        weekNumber: weekNum,
+        allocation: 0
+      }))
     };
     
-    weekNumbers.forEach(weekNum => {
-      newRow[`week${weekNum}`] = 0;
-    });
-    
-    setRowData(prev => [...prev, newRow]);
-  }, [weekNumbers]);
+    onAddResourcePlan(newResourcePlan);
+  }, [weekNumbers, onAddResourcePlan]);
 
   const totals = useMemo(() => {
     const totalIntCost = rowData.reduce((sum, row) => sum + calculateTotalIntCost(row), 0);
     const totalPrice = rowData.reduce((sum, row) => sum + calculateTotalPrice(row), 0);
     const totalEfforts = rowData.reduce((sum, row) => sum + calculateEstimatedEfforts(row), 0);
-    const calculatedMargin = totalPrice > 0 ? ((totalPrice - (totalIntCost / projectSettings.exchangeRate)) / totalPrice) * 100 : 0;
+    const calculatedMargin = totalPrice > 0 ? ((totalPrice - (totalIntCost / project.exchangeRate)) / totalPrice) * 100 : 0;
     
     return { totalIntCost, totalPrice, totalEfforts, calculatedMargin };
-  }, [rowData, weekNumbers, projectSettings.exchangeRate]);
+  }, [rowData, weekNumbers, project.exchangeRate]);
 
   return (
     <div className="space-y-6">
@@ -419,16 +486,16 @@ export function ResourcePlan({ resources }: ResourcePlanProps) {
             <Input
               id="daysInFTE"
               type="number"
-              value={projectSettings.daysInFTE}
-              onChange={(e) => setProjectSettings(prev => ({ ...prev, daysInFTE: parseInt(e.target.value) || 20 }))}
+              value={project.daysInFTE}
+              onChange={(e) => onProjectSettingsChange({ daysInFTE: parseInt(e.target.value) || 20 })}
             />
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="clientCurrency">Client currency</Label>
             <Select
-              value={projectSettings.clientCurrency}
-              onValueChange={(value) => setProjectSettings(prev => ({ ...prev, clientCurrency: value }))}
+              value={project.clientCurrency}
+              onValueChange={(value) => onProjectSettingsChange({ clientCurrency: value })}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -446,8 +513,8 @@ export function ResourcePlan({ resources }: ResourcePlanProps) {
               id="exchangeRate"
               type="number"
               step="0.01"
-              value={projectSettings.exchangeRate}
-              onChange={(e) => setProjectSettings(prev => ({ ...prev, exchangeRate: parseFloat(e.target.value) || 0.89 }))}
+              value={project.exchangeRate}
+              onChange={(e) => onProjectSettingsChange({ exchangeRate: parseFloat(e.target.value) || 0.89 })}
             />
           </div>
           
@@ -487,9 +554,6 @@ export function ResourcePlan({ resources }: ResourcePlanProps) {
             theme="legacy"
             rowData={rowData}
             columnDefs={columnDefs}
-            onCellValueChanged={() => {
-              setRowData(prev => [...prev]);
-            }}
             defaultColDef={{
               sortable: true,
               filter: false,

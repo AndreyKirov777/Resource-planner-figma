@@ -10,3 +10,85 @@ datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
+
+model Project {
+  id              Int             @id @default(autoincrement())
+  name            String
+  description     String?
+  daysInFTE       Int             @default(20)
+  clientCurrency  String          @default("EUR")
+  exchangeRate    Float           @default(0.89)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relations
+  rateCards       RateCard[]
+  resourceLists   ResourceList[]
+  resourcePlans   ResourcePlan[]
+}
+
+model RateCard {
+  id              Int             @id @default(autoincrement())
+  role            String
+  namingInPM      String
+  discipline      String
+  description     String?
+  ukraine         Float
+  easternEurope   Float
+  asiaGE          Float
+  asiaARMKZ       Float
+  latam           Float
+  mexico          Float
+  india           Float
+  newYork         Float
+  london          Float
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relations
+  projectId       Int
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ResourceList {
+  id              Int             @id @default(autoincrement())
+  role            String
+  name            String?
+  intRate         Float
+  description     String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relations
+  projectId       Int
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ResourcePlan {
+  id              Int             @id @default(autoincrement())
+  role            String
+  name            String?
+  intHourlyRate   Float
+  clientHourlyRate Float
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relations
+  projectId       Int
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  weeklyAllocations WeeklyAllocation[]
+}
+
+model WeeklyAllocation {
+  id              Int             @id @default(autoincrement())
+  weekNumber      Int
+  allocation      Int             @default(0) // Percentage allocation (0-100)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relations
+  resourcePlanId  Int
+  resourcePlan    ResourcePlan    @relation(fields: [resourcePlanId], references: [id], onDelete: Cascade)
+  
+  @@unique([resourcePlanId, weekNumber])
+}
