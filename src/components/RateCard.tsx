@@ -316,9 +316,16 @@ export function RateCard({
           });
           
           if (importedData.length > 0) {
+            console.log('Imported data:', importedData);
             // Add each imported rate card to the database
             for (const rateCardData of importedData) {
-              onAddRateCard(rateCardData);
+              try {
+                await onAddRateCard(rateCardData);
+              } catch (error) {
+                console.error('Error adding rate card:', error);
+                alert(`Error adding rate card: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                return;
+              }
             }
             alert(`Successfully imported ${importedData.length} rate card entries`);
           } else {

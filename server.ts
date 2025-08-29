@@ -95,15 +95,36 @@ app.get('/api/projects/:projectId/rate-cards', async (req, res) => {
 
 app.post('/api/projects/:projectId/rate-cards', async (req, res) => {
   try {
+    console.log('Creating rate card with data:', req.body);
+    
+    // Ensure all required fields are present with defaults
+    const rateCardData = {
+      role: req.body.role || '',
+      namingInPM: req.body.namingInPM || req.body.role || '',
+      discipline: req.body.discipline || 'General',
+      description: req.body.description || '',
+      ukraine: parseFloat(req.body.ukraine) || 0,
+      easternEurope: parseFloat(req.body.easternEurope) || 0,
+      asiaGE: parseFloat(req.body.asiaGE) || 0,
+      asiaARMKZ: parseFloat(req.body.asiaARMKZ) || 0,
+      latam: parseFloat(req.body.latam) || 0,
+      mexico: parseFloat(req.body.mexico) || 0,
+      india: parseFloat(req.body.india) || 0,
+      newYork: parseFloat(req.body.newYork) || 0,
+      london: parseFloat(req.body.london) || 0,
+      projectId: parseInt(req.params.projectId)
+    };
+    
     const rateCard = await prisma.rateCard.create({
-      data: {
-        ...req.body,
-        projectId: parseInt(req.params.projectId)
-      }
+      data: rateCardData
     });
     res.json(rateCard);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create rate card' });
+    console.error('Error creating rate card:', error);
+    res.status(500).json({ 
+      error: 'Failed to create rate card',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 

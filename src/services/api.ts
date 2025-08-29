@@ -116,7 +116,10 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error('Failed to create rate card');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Failed to create rate card: ${errorData.details || errorData.error || response.statusText}`);
+    }
     return response.json();
   },
 

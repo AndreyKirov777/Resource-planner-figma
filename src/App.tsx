@@ -126,11 +126,14 @@ export default function App() {
     if (!currentProject) return;
     
     try {
+      console.log('Adding rate card:', newRateCard);
       const createdRateCard = await api.createRateCard(currentProject.id, newRateCard);
       setRateCards(prev => [...prev, createdRateCard]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add rate card');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add rate card';
+      setError(errorMessage);
       console.error('Error adding rate card:', err);
+      throw err; // Re-throw to be caught by the calling function
     }
   };
 
