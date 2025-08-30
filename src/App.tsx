@@ -147,6 +147,17 @@ export default function App() {
     }
   };
 
+  const handleDeleteAllRateCards = async () => {
+    try {
+      const result = await api.deleteAllRateCards();
+      setRateCards([]);
+      console.log(result.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete rate cards');
+      console.error('Error deleting rate cards:', err);
+    }
+  };
+
   const handleResourcePlansChange = async (updatedResourcePlans: ResourcePlanType[]) => {
     try {
       setResourcePlans(updatedResourcePlans);
@@ -272,11 +283,12 @@ export default function App() {
         </TabsContent>
 
         <TabsContent value="rate-card" className="mt-6">
-          <RateCard 
+                    <RateCard
             rateCards={rateCards}
             onRateCardsChange={handleRateCardsChange}
             onAddRateCard={handleAddRateCard}
             onDeleteRateCard={handleDeleteRateCard}
+            onDeleteAllRateCards={handleDeleteAllRateCards}
           />
         </TabsContent>
       </Tabs>

@@ -15,13 +15,15 @@ interface RateCardProps {
   onRateCardsChange: (rateCards: RateCardType[]) => void;
   onAddRateCard: (rateCard: Partial<RateCardType>) => void;
   onDeleteRateCard: (id: number) => void;
+  onDeleteAllRateCards: () => void;
 }
 
 export function RateCard({ 
   rateCards, 
   onRateCardsChange, 
   onAddRateCard,
-  onDeleteRateCard 
+  onDeleteRateCard,
+  onDeleteAllRateCards 
 }: RateCardProps) {
   // Currency formatter for rate columns
   const currencyFormatter = (params: any) => {
@@ -358,10 +360,8 @@ export function RateCard({
     const confirmed = window.confirm(`Are you sure you want to delete all ${rateCards.length} rate card entries? This action cannot be undone.`);
     
     if (confirmed) {
-      // Delete all rate cards by calling onDeleteRateCard for each one
-      rateCards.forEach(rateCard => {
-        onDeleteRateCard(rateCard.id);
-      });
+      // Use the new bulk delete function
+      onDeleteAllRateCards();
       alert('All rate card entries have been cleared.');
     }
   };

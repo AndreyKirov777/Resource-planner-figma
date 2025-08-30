@@ -140,6 +140,14 @@ export const api = {
     if (!response.ok) throw new Error('Failed to delete rate card');
   },
 
+  async deleteAllRateCards(): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/rate-cards`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to delete rate cards');
+    return response.json();
+  },
+
   // Resource List endpoints
   async getResourceLists(projectId: number): Promise<ResourceList[]> {
     const response = await fetch(`${API_BASE_URL}/projects/${projectId}/resource-lists`);

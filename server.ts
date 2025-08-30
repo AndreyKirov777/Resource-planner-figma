@@ -151,6 +151,15 @@ app.delete('/api/rate-cards/:id', async (req, res) => {
   }
 });
 
+app.delete('/api/rate-cards', async (req, res) => {
+  try {
+    const result = await prisma.rateCard.deleteMany({});
+    res.json({ message: `${result.count} rate cards deleted` });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete rate cards' });
+  }
+});
+
 // Resource List endpoints
 app.get('/api/projects/:projectId/resource-lists', async (req, res) => {
   try {
