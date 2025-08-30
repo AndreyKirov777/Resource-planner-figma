@@ -442,11 +442,7 @@ export function RateCard({
             </SelectContent>
           </Select>
         </div>
-        {namingInPMFilter !== 'all' && (
-          <span className="text-sm text-gray-500">
-            Showing {filteredRateCards.length} of {rateCards.length} entries
-          </span>
-        )}
+
       </div>
       <div className="ag-theme-alpine" style={{ height: 600, width: '100%' }}>
         <AgGridReact
