@@ -265,6 +265,7 @@ export function RateCard({
 
   const handleImportRateCard = async () => {
     try {
+      onDeleteAllRateCards(); // Clear existing rate cards
       // Create a file input element
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
