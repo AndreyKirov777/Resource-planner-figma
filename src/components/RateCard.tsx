@@ -3,6 +3,7 @@ import { AgGridReact } from 'ag-grid-react';
 import { ColDef } from 'ag-grid-community';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Plus, Trash2, Search, X } from 'lucide-react';
 import * as ExcelJS from 'exceljs';
 import { RateCard as RateCardType } from '../services/api';
@@ -31,15 +32,15 @@ export function RateCard({
   onDeleteAllRateCards 
 }: RateCardProps) {
   // State for external filter
-  const [namingInPMFilter, setNamingInPMFilter] = useState<string>('');
+  const [namingInPMFilter, setNamingInPMFilter] = useState<string>('all');
   
   // Filtered data based on external filter
   const filteredRateCards = useMemo(() => {
-    if (!namingInPMFilter.trim()) {
+    if (namingInPMFilter === 'all') {
       return rateCards;
     }
     return rateCards.filter(rateCard => 
-      rateCard.namingInPM?.toLowerCase().includes(namingInPMFilter.toLowerCase())
+      rateCard.namingInPM?.toLowerCase() === namingInPMFilter.toLowerCase()
     );
   }, [rateCards, namingInPMFilter]);
   
@@ -402,27 +403,21 @@ export function RateCard({
       
       {/* External Filter for Naming in PM */}
       <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            type="text"
-            placeholder="Filter by Naming in PM..."
-            value={namingInPMFilter}
-            onChange={(e) => setNamingInPMFilter(e.target.value)}
-            className="pl-10 pr-10"
-          />
-          {namingInPMFilter && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-              onClick={() => setNamingInPMFilter('')}
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          )}
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">Filter by Naming in PM:</span>
+          <Select value={namingInPMFilter} onValueChange={setNamingInPMFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select level" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="junior">Junior</SelectItem>
+              <SelectItem value="middle">Middle</SelectItem>
+              <SelectItem value="senior">Senior</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        {namingInPMFilter && (
+        {namingInPMFilter !== 'all' && (
           <span className="text-sm text-gray-500">
             Showing {filteredRateCards.length} of {rateCards.length} entries
           </span>
