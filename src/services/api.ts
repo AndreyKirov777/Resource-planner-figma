@@ -37,6 +37,7 @@ export interface ResourceList {
   role: string;
   name?: string;
   intRate: number;
+  location?: string;
   description?: string;
   projectId: number;
   createdAt: string;

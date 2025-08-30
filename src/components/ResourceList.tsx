@@ -45,6 +45,7 @@ export function ResourceList({
   const [newName, setNewName] = useState('');
   const [newRate, setNewRate] = useState('');
   const [newDescription, setNewDescription] = useState('');
+  const [newLocation, setNewLocation] = useState('');
 
   const deleteResource = (id: number) => {
     onDeleteResourceList(id);
@@ -105,6 +106,20 @@ export function ResourceList({
         }
       },
       {
+        headerName: 'Location',
+        field: 'location',
+        width: 120,
+        editable: true,
+        onCellValueChanged: (params: any) => {
+          const updatedResources = resourceLists.map(resource =>
+            resource.id === params.data.id
+              ? { ...resource, location: params.newValue }
+              : resource
+          );
+          onResourceListsChange(updatedResources);
+        }
+      },
+      {
         headerName: 'Daily Rate ($/day)',
         width: 140,
         valueGetter: (params: any) => params.data.intRate * 8,
@@ -139,6 +154,7 @@ export function ResourceList({
       role: newRole.trim(),
       name: newName.trim() || undefined,
       intRate: parseFloat(newRate) || 0,
+      location: newLocation.trim() || undefined,
       description: newDescription.trim() || undefined
     };
     
@@ -147,6 +163,7 @@ export function ResourceList({
     setNewName('');
     setNewRate('');
     setNewDescription('');
+    setNewLocation('');
   };
 
   const totalResources = resourceLists.length;
@@ -160,50 +177,69 @@ export function ResourceList({
         <CardHeader>
           <CardTitle>Add New Resource</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="newRole">Role Name</Label>
+        <CardContent>
+          <div className="flex items-end gap-3 flex-wrap">
+            <div className="flex-1 min-w-40">
+              <Label htmlFor="newRole" className="text-sm font-medium">Role Name</Label>
               <Input
                 id="newRole"
                 placeholder="e.g. Senior Developer"
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value)}
+                className="mt-1"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="newName">Name (Optional)</Label>
+            <div className="flex-1 min-w-32">
+              <Label htmlFor="newName" className="text-sm font-medium">Name</Label>
               <Input
                 id="newName"
                 placeholder="e.g. John Smith"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
+                className="mt-1"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="newRate">Internal Rate ($/h)</Label>
+            <div className="w-24">
+              <Label htmlFor="newRate" className="text-sm font-medium">Rate ($/h)</Label>
               <Input
                 id="newRate"
                 type="number"
                 placeholder="25.00"
                 value={newRate}
                 onChange={(e) => setNewRate(e.target.value)}
+                className="mt-1"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="newDescription">Description (Optional)</Label>
+            <div className="w-28">
+              <Label htmlFor="newLocation" className="text-sm font-medium">Location</Label>
+              <Input
+                id="newLocation"
+                placeholder="New York"
+                value={newLocation}
+                onChange={(e) => setNewLocation(e.target.value)}
+                maxLength={20}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex-1 min-w-40">
+              <Label htmlFor="newDescription" className="text-sm font-medium">Description</Label>
               <Input
                 id="newDescription"
-                placeholder="Brief description of role"
+                placeholder="Brief description"
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
+                className="mt-1"
               />
             </div>
+            <Button 
+              onClick={addResource} 
+              disabled={!newRole.trim() || !newRate.trim()}
+              className="mb-0"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
           </div>
-          <Button onClick={addResource} disabled={!newRole.trim() || !newRate.trim()}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add Resource
-          </Button>
         </CardContent>
       </Card>
 
