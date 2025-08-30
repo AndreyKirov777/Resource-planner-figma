@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { ColDef } from 'ag-grid-community';
 import { Button } from './ui/button';
-import { Plus, Trash2 } from 'lucide-react';
+import { Input } from './ui/input';
+import { Plus, Trash2, Search, X } from 'lucide-react';
 import * as ExcelJS from 'exceljs';
 import { RateCard as RateCardType } from '../services/api';
 
@@ -29,6 +30,19 @@ export function RateCard({
   onDeleteRateCard,
   onDeleteAllRateCards 
 }: RateCardProps) {
+  // State for external filter
+  const [namingInPMFilter, setNamingInPMFilter] = useState<string>('');
+  
+  // Filtered data based on external filter
+  const filteredRateCards = useMemo(() => {
+    if (!namingInPMFilter.trim()) {
+      return rateCards;
+    }
+    return rateCards.filter(rateCard => 
+      rateCard.namingInPM?.toLowerCase().includes(namingInPMFilter.toLowerCase())
+    );
+  }, [rateCards, namingInPMFilter]);
+  
   // Currency formatter for rate columns
   const currencyFormatter = (params: any) => {
     if (params.value != null) {
@@ -58,7 +72,7 @@ export function RateCard({
       headerName: 'Naming in PM',
       field: 'namingInPM',
       sortable: true,
-      filter: true,
+      filter: false, // Disable built-in filter since we're using external filter
       resizable: true,
       editable: true,
       onCellValueChanged: (params: any) => {
@@ -385,9 +399,38 @@ export function RateCard({
           Clear All
         </Button>
       </div>
+      
+      {/* External Filter for Naming in PM */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            type="text"
+            placeholder="Filter by Naming in PM..."
+            value={namingInPMFilter}
+            onChange={(e) => setNamingInPMFilter(e.target.value)}
+            className="pl-10 pr-10"
+          />
+          {namingInPMFilter && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+              onClick={() => setNamingInPMFilter('')}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+        {namingInPMFilter && (
+          <span className="text-sm text-gray-500">
+            Showing {filteredRateCards.length} of {rateCards.length} entries
+          </span>
+        )}
+      </div>
       <div className="ag-theme-alpine" style={{ height: 600, width: '100%' }}>
         <AgGridReact
-          rowData={rateCards}
+          rowData={filteredRateCards}
           columnDefs={columnDefs}
           pagination={true}
           paginationPageSize={20}
