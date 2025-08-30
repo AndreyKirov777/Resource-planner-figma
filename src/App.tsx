@@ -137,6 +137,28 @@ export default function App() {
     }
   };
 
+  const handleAddRateCardsBulk = async (newRateCards: Partial<RateCardType>[]) => {
+    if (!currentProject) {
+      throw new Error('No current project available');
+    }
+    
+    try {
+      console.log('Adding bulk rate cards:', newRateCards);
+      const result = await api.createRateCardsBulk(currentProject.id, newRateCards);
+      
+      // Reload all rate cards to get the updated list with IDs
+      const updatedRateCards = await api.getRateCards(currentProject.id);
+      setRateCards(updatedRateCards);
+      
+      return result;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add bulk rate cards';
+      setError(errorMessage);
+      console.error('Error adding bulk rate cards:', err);
+      throw err; // Re-throw to be caught by the calling function
+    }
+  };
+
   const handleDeleteRateCard = async (id: number) => {
     try {
       await api.deleteRateCard(id);
@@ -283,10 +305,12 @@ export default function App() {
         </TabsContent>
 
         <TabsContent value="rate-card" className="mt-6">
-                    <RateCard
+          <RateCard
+            projectId={currentProject.id}
             rateCards={rateCards}
             onRateCardsChange={handleRateCardsChange}
             onAddRateCard={handleAddRateCard}
+            onAddRateCardsBulk={handleAddRateCardsBulk}
             onDeleteRateCard={handleDeleteRateCard}
             onDeleteAllRateCards={handleDeleteAllRateCards}
           />

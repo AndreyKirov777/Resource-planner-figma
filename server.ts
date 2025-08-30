@@ -128,6 +128,46 @@ app.post('/api/projects/:projectId/rate-cards', async (req, res) => {
   }
 });
 
+// Bulk create rate cards endpoint
+app.post('/api/projects/:projectId/rate-cards/bulk', async (req, res) => {
+  try {
+    console.log('Creating bulk rate cards with data:', req.body);
+    
+    const projectId = parseInt(req.params.projectId);
+    const rateCardsData = req.body.map((rateCard: any) => ({
+      role: rateCard.role || '',
+      namingInPM: rateCard.namingInPM || rateCard.role || '',
+      discipline: rateCard.discipline || 'General',
+      description: rateCard.description || '',
+      ukraine: parseFloat(rateCard.ukraine) || 0,
+      easternEurope: parseFloat(rateCard.easternEurope) || 0,
+      asiaGE: parseFloat(rateCard.asiaGE) || 0,
+      asiaARMKZ: parseFloat(rateCard.asiaARMKZ) || 0,
+      latam: parseFloat(rateCard.latam) || 0,
+      mexico: parseFloat(rateCard.mexico) || 0,
+      india: parseFloat(rateCard.india) || 0,
+      newYork: parseFloat(rateCard.newYork) || 0,
+      london: parseFloat(rateCard.london) || 0,
+      projectId: projectId
+    }));
+    
+    const result = await prisma.rateCard.createMany({
+      data: rateCardsData
+    });
+    
+    res.json({ 
+      message: `Successfully created ${result.count} rate cards`,
+      count: result.count
+    });
+  } catch (error) {
+    console.error('Error creating bulk rate cards:', error);
+    res.status(500).json({ 
+      error: 'Failed to create bulk rate cards',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 app.put('/api/rate-cards/:id', async (req, res) => {
   try {
     const rateCard = await prisma.rateCard.update({

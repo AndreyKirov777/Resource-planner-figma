@@ -123,6 +123,19 @@ export const api = {
     return response.json();
   },
 
+  async createRateCardsBulk(projectId: number, data: Partial<RateCard>[]): Promise<{ message: string; count: number }> {
+    const response = await fetch(`${API_BASE_URL}/projects/${projectId}/rate-cards/bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Failed to create bulk rate cards: ${errorData.details || errorData.error || response.statusText}`);
+    }
+    return response.json();
+  },
+
   async updateRateCard(id: number, data: Partial<RateCard>): Promise<RateCard> {
     const response = await fetch(`${API_BASE_URL}/rate-cards/${id}`, {
       method: 'PUT',

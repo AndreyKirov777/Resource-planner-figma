@@ -11,17 +11,21 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 
 interface RateCardProps {
+  projectId: number;
   rateCards: RateCardType[];
   onRateCardsChange: (rateCards: RateCardType[]) => void;
   onAddRateCard: (rateCard: Partial<RateCardType>) => void;
+  onAddRateCardsBulk: (rateCards: Partial<RateCardType>[]) => Promise<{ message: string; count: number }>;
   onDeleteRateCard: (id: number) => void;
   onDeleteAllRateCards: () => void;
 }
 
 export function RateCard({ 
+  projectId,
   rateCards, 
   onRateCardsChange, 
   onAddRateCard,
+  onAddRateCardsBulk,
   onDeleteRateCard,
   onDeleteAllRateCards 
 }: RateCardProps) {
@@ -320,17 +324,15 @@ export function RateCard({
           
           if (importedData.length > 0) {
             console.log('Imported data:', importedData);
-            // Add each imported rate card to the database
-            for (const rateCardData of importedData) {
-              try {
-                await onAddRateCard(rateCardData);
-              } catch (error) {
-                console.error('Error adding rate card:', error);
-                alert(`Error adding rate card: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                return;
-              }
+            // Add all imported rate cards to the database at once
+            try {
+              const result = await onAddRateCardsBulk(importedData);
+              alert(`Successfully imported ${result.count} rate card entries`);
+            } catch (error) {
+              console.error('Error adding bulk rate cards:', error);
+              alert(`Error importing rate cards: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              return;
             }
-            alert(`Successfully imported ${importedData.length} rate card entries`);
           } else {
             alert('No valid data found in the Excel file');
           }
