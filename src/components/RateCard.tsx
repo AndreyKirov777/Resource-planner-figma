@@ -362,7 +362,6 @@ export function RateCard({
     if (confirmed) {
       // Use the new bulk delete function
       onDeleteAllRateCards();
-      alert('All rate card entries have been cleared.');
     }
   };
 
