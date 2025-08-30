@@ -34,6 +34,20 @@ export function RateCard({
   // State for external filter
   const [namingInPMFilter, setNamingInPMFilter] = useState<string>('all');
   
+  // State for arrays created from Excel import
+  const [namingInPMArray, setNamingInPMArray] = useState<string[]>([]);
+  const [disciplineArray, setDisciplineArray] = useState<string[]>([]);
+  
+  // Update arrays when rateCards change (for existing data)
+  React.useEffect(() => {
+    if (rateCards.length > 0) {
+      const namingInPM = [...new Set(rateCards.map(item => item.namingInPM).filter(value => value && value.trim()))];
+      const discipline = [...new Set(rateCards.map(item => item.discipline).filter(value => value && value.trim()))];
+      setNamingInPMArray(namingInPM);
+      setDisciplineArray(discipline);
+    }
+  }, [rateCards]);
+  
   // Filtered data based on external filter
   const filteredRateCards = useMemo(() => {
     if (namingInPMFilter === 'all') {
@@ -339,6 +353,15 @@ export function RateCard({
           
           if (importedData.length > 0) {
             console.log('Imported data:', importedData);
+            
+            // Create arrays with unique values from the imported data
+            const naming_in_pm = [...new Set(importedData.map(item => item.namingInPM).filter(value => value && value.trim()))];
+            const discipline = [...new Set(importedData.map(item => item.discipline).filter(value => value && value.trim()))];
+            
+            // Update state arrays
+            setNamingInPMArray(naming_in_pm);
+            setDisciplineArray(discipline);
+            
             // Add all imported rate cards to the database at once
             try {
               const result = await onAddRateCardsBulk(importedData);
@@ -411,9 +434,11 @@ export function RateCard({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
-              <SelectItem value="junior">Junior</SelectItem>
-              <SelectItem value="middle">Middle</SelectItem>
-              <SelectItem value="senior">Senior</SelectItem>
+              {namingInPMArray.map((value) => (
+                <SelectItem key={value} value={value.toLowerCase()}>
+                  {value}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
