@@ -427,7 +427,7 @@ export function RateCard({
       {/* External Filter for Naming in PM */}
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Nameing in PM:</span>
+          <span className="text-sm font-medium">Naming in PM:</span>
           <Select value={namingInPMFilter} onValueChange={setNamingInPMFilter}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Select level" />
