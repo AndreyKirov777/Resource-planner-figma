@@ -63,6 +63,8 @@
     --color-red-500: oklch(.637 .237 25.331);
     --color-red-600: oklch(.577 .245 27.325);
     --color-emerald-500: oklch(.696 .17 162.48);
+    --color-green-500: oklch(.696 .17 142.48);
+    --color-green-600: oklch(.577 .17 142.48);
     --color-gray-100: oklch(.967 .003 264.542);
     --color-black: #000;
     --color-white: #fff;
@@ -1460,6 +1462,14 @@
 
   .bg-emerald-500 {
     background-color: var(--color-emerald-500);
+  }
+
+  .bg-green-500 {
+    background-color: var(--color-green-500);
+  }
+
+  .bg-green-600 {
+    background-color: var(--color-green-600);
   }
 
   .bg-foreground {

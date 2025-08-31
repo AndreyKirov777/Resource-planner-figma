@@ -4,13 +4,35 @@ import { ColDef } from 'ag-grid-community';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Plus, Trash2, Search, X } from 'lucide-react';
+import { Plus, Trash2, Search, X, ArrowLeft } from 'lucide-react';
 import * as ExcelJS from 'exceljs';
 import { RateCard as RateCardType } from '../services/api';
 
 // Import AG Grid styles
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
+
+// Custom cell renderer component for the Actions column
+const ActionsCellRenderer = (props: any) => {
+  const addRateCard = () => {
+    if ((window as any).addRateCard) {
+      (window as any).addRateCard(props.data);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center h-full">
+      <button
+        onClick={addRateCard}
+        className="bg-green-500 hover:bg-green-600 text-white border-none rounded cursor-pointer px-2 py-1 text-xs flex items-center gap-1"
+        title="Add rate card"
+      >
+        <ArrowLeft className="h-3 w-3" />
+        Add
+      </button>
+    </div>
+  );
+};
 
 interface RateCardProps {
   projectId: number;
@@ -87,7 +109,7 @@ export function RateCard({
       resizable: false,
       editable: false,
       width: 80,
-      cellRenderer: () => '', // Empty cell for now
+      cellRenderer: ActionsCellRenderer,
       pinned: 'left',
       hide: false
     },
@@ -429,6 +451,15 @@ export function RateCard({
       onDeleteAllRateCards();
     }
   };
+
+  // Empty click handler for Add button - to be implemented later
+  const handleAddRateCard = (rateCardData: any) => {
+    // TODO: Implement add rate card functionality
+    console.log('Add rate card clicked for:', rateCardData);
+  };
+
+  // Make add function globally available for AG Grid buttons
+  (window as any).addRateCard = handleAddRateCard;
 
   return (
     <div className="p-6 space-y-6">
