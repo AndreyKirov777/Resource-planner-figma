@@ -31,8 +31,9 @@ export function RateCard({
   onDeleteRateCard,
   onDeleteAllRateCards 
 }: RateCardProps) {
-  // State for external filter
+  // State for external filters
   const [namingInPMFilter, setNamingInPMFilter] = useState<string>('all');
+  const [disciplineFilter, setDisciplineFilter] = useState<string>('all');
   
   // State for arrays created from Excel import
   const [namingInPMArray, setNamingInPMArray] = useState<string[]>([]);
@@ -48,15 +49,26 @@ export function RateCard({
     }
   }, [rateCards]);
   
-  // Filtered data based on external filter
+  // Filtered data based on external filters
   const filteredRateCards = useMemo(() => {
-    if (namingInPMFilter === 'all') {
-      return rateCards;
+    let filtered = rateCards;
+    
+    // Apply Naming in PM filter
+    if (namingInPMFilter !== 'all') {
+      filtered = filtered.filter(rateCard => 
+        rateCard.namingInPM?.toLowerCase() === namingInPMFilter.toLowerCase()
+      );
     }
-    return rateCards.filter(rateCard => 
-      rateCard.namingInPM?.toLowerCase() === namingInPMFilter.toLowerCase()
-    );
-  }, [rateCards, namingInPMFilter]);
+    
+    // Apply Discipline filter
+    if (disciplineFilter !== 'all') {
+      filtered = filtered.filter(rateCard => 
+        rateCard.discipline?.toLowerCase() === disciplineFilter.toLowerCase()
+      );
+    }
+    
+    return filtered;
+  }, [rateCards, namingInPMFilter, disciplineFilter]);
   
   // Currency formatter for rate columns
   const currencyFormatter = (params: any) => {
@@ -103,7 +115,7 @@ export function RateCard({
       headerName: 'Discipline',
       field: 'discipline',
       sortable: true,
-      filter: true,
+      filter: false, // Disable built-in filter since we're using external filter
       resizable: true,
       editable: true,
       onCellValueChanged: (params: any) => {
@@ -424,8 +436,8 @@ export function RateCard({
         </Button>
       </div>
       
-      {/* External Filter for Naming in PM */}
-      <div className="flex items-center gap-2">
+      {/* External Filters */}
+      <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Naming in PM:</span>
           <Select value={namingInPMFilter} onValueChange={setNamingInPMFilter}>
@@ -442,7 +454,23 @@ export function RateCard({
             </SelectContent>
           </Select>
         </div>
-
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">Discipline:</span>
+          <Select value={disciplineFilter} onValueChange={setDisciplineFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select discipline" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              {disciplineArray.map((value) => (
+                <SelectItem key={value} value={value.toLowerCase()}>
+                  {value}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div className="ag-theme-alpine" style={{ height: 600, width: '100%' }}>
         <AgGridReact
