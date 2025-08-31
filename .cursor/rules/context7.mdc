@@ -1,0 +1,6 @@
+---
+description: "Instructs the AI to use the Context7 MCP to fetch the latest documentation for libraries when working on TypeScript files."
+globs: ["**/*.ts", "**/*.tsx"]
+---
+
+When generating or editing code in this file, always refer to the most current, up-to-date documentation and code examples for any libraries or frameworks mentioned. To do this, you must **use context7**. This will ensure you avoid using deprecated APIs or outdated patterns.
