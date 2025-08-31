@@ -80,6 +80,18 @@ export function RateCard({
 
   const columnDefs: ColDef<RateCardType>[] = [
     {
+      headerName: 'Action',
+      field: 'id', // Use existing field to avoid TypeScript error
+      sortable: false,
+      filter: false,
+      resizable: false,
+      editable: false,
+      width: 80,
+      cellRenderer: () => '', // Empty cell for now
+      pinned: 'left',
+      hide: false
+    },
+    {
       headerName: 'Role',
       field: 'role',
       sortable: true,
