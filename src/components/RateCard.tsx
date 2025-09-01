@@ -15,19 +15,33 @@ import 'ag-grid-community/styles/ag-theme-alpine.css';
 
 // Custom cell renderer component for the Actions column
 const ActionsCellRenderer = (props: any) => {
+  const [isClicked, setIsClicked] = useState(false);
+
   const addRateCard = () => {
     if ((window as any).addRateCard) {
       (window as any).addRateCard(props.data);
     }
+    
+    // Set clicked state to true to change color to orange
+    setIsClicked(true);
+    
+    // Reset color back to green after 1 second
+    setTimeout(() => {
+      setIsClicked(false);
+    }, 1000);
   };
 
   return (
     <div className="flex items-center justify-center h-full">
-             <button
-         onClick={addRateCard}
-         className="bg-green-500 hover:bg-green-600 text-white border-none rounded-md cursor-pointer px-4 py-0.25 text-xs flex items-center gap-1 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md font-medium"
-         title="Add rate card"
-       >
+      <button
+        onClick={addRateCard}
+        className={`${
+          isClicked 
+            ? 'bg-orange-500 hover:bg-orange-600' 
+            : 'bg-green-500 hover:bg-green-600'
+        } text-white border-none rounded-md cursor-pointer px-4 py-0.25 text-xs flex items-center gap-1 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md font-medium`}
+        title="Add rate card"
+      >
         <ArrowLeft className="h-3 w-3" />
         Add
       </button>
