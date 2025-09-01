@@ -219,7 +219,11 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!response.ok) throw new Error('Failed to update resource plan');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.details || errorData.error || 'Failed to update resource plan';
+      throw new Error(errorMessage);
+    }
     return response.json();
   },
 

@@ -222,20 +222,52 @@ export function ResourcePlan({
         cellEditorParams: {
           values: resourceLists.map(r => r.role)
         },
+        cellRenderer: (params: any) => {
+          const role = params.value;
+          const isValidRole = validateRole(role);
+          
+          return (
+            <div className={`flex items-center gap-2 ${!isValidRole && role ? 'text-amber-600' : ''}`}>
+              <span>{role || 'Select role...'}</span>
+              {!isValidRole && role && (
+                <span title="This role is not in the Resource List" className="text-xs bg-amber-100 text-amber-800 px-1 rounded">
+                  ⚠️
+                </span>
+              )}
+            </div>
+          );
+        },
         onCellValueChanged: (params: any) => {
           const selectedResource = resourceLists.find(r => r.role === params.newValue);
           if (selectedResource) {
+            // Auto-populate fields from the selected resource
             params.node.setDataValue('intHourlyRate', selectedResource.intRate);
             params.node.setDataValue('name', selectedResource.name || '');
+            
+            // Update the resource plan with all the new data
+            const updatedResourcePlans = resourcePlans.map(plan =>
+              plan.id === params.data.id
+                ? { 
+                    ...plan, 
+                    role: params.newValue,
+                    intHourlyRate: selectedResource.intRate,
+                    name: selectedResource.name || ''
+                  }
+                : plan
+            );
+            onResourcePlansChange(updatedResourcePlans);
+          } else {
+            // If role doesn't exist in resourceLists, show a warning but still allow the update
+            console.warn(`Role "${params.newValue}" not found in resource list. This may cause issues.`);
+            
+            // Update the resource plan with just the role field
+            const updatedResourcePlans = resourcePlans.map(plan =>
+              plan.id === params.data.id
+                ? { ...plan, role: params.newValue }
+                : plan
+            );
+            onResourcePlansChange(updatedResourcePlans);
           }
-          
-          // Update the resource plan in the database
-          const updatedResourcePlans = resourcePlans.map(plan =>
-            plan.id === params.data.id
-              ? { ...plan, role: params.newValue }
-              : plan
-          );
-          onResourcePlansChange(updatedResourcePlans);
         }
       },
       {
@@ -465,6 +497,11 @@ export function ResourcePlan({
     onAddResourcePlan(newResourcePlan);
   }, [weekNumbers, onAddResourcePlan]);
 
+  // Helper function to validate if a role exists in resourceLists
+  const validateRole = useCallback((role: string): boolean => {
+    return resourceLists.some(r => r.role === role);
+  }, [resourceLists]);
+
   const totals = useMemo(() => {
     const totalIntCost = rowData.reduce((sum, row) => sum + calculateTotalIntCost(row), 0);
     const totalPrice = rowData.reduce((sum, row) => sum + calculateTotalPrice(row), 0);
@@ -546,7 +583,9 @@ export function ResourcePlan({
         </div>
         
         <div className="mb-2 text-sm text-muted-foreground">
-          💡 Tips: Click the green <span className="inline-flex items-center justify-center w-4 h-4 bg-emerald-500 text-white rounded-full text-xs">+</span> buttons to insert weeks at specific positions, or the red × buttons to remove weeks or roles. Selecting a role will auto-populate the corresponding name and rate.
+          💡 Tips: Click the green <span className="inline-flex items-center justify-center w-4 h-4 bg-emerald-500 text-white rounded-full text-xs">+</span> buttons to insert weeks at specific positions, or the red × buttons to remove weeks or roles. 
+          <br />
+          <span className="text-amber-600 font-medium">⚠️ Important:</span> When selecting a role, choose from the dropdown to auto-populate name and rate. If you type a custom role, ensure it exists in the Resource List tab first.
         </div>
         
         <div className="ag-theme-alpine" style={{ height: '600px', width: '100%' }}>

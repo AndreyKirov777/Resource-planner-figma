@@ -292,6 +292,14 @@ app.put('/api/resource-plans/:id', async (req, res) => {
   try {
     const { weeklyAllocations, ...resourcePlanData } = req.body;
     
+    // Validate required fields
+    if (!resourcePlanData.role || resourcePlanData.role.trim() === '') {
+      return res.status(400).json({ 
+        error: 'Role is required and cannot be empty',
+        details: 'Please provide a valid role name'
+      });
+    }
+    
     // Update resource plan
     const resourcePlan = await prisma.resourcePlan.update({
       where: { id: parseInt(req.params.id) },
@@ -331,7 +339,27 @@ app.put('/api/resource-plans/:id', async (req, res) => {
     
     res.json(resourcePlan);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to update resource plan' });
+    console.error('Error updating resource plan:', error);
+    
+    // Provide more specific error messages
+    if (error.code === 'P2002') {
+      return res.status(400).json({ 
+        error: 'Resource plan update failed',
+        details: 'A resource plan with this role already exists'
+      });
+    }
+    
+    if (error.code === 'P2025') {
+      return res.status(404).json({ 
+        error: 'Resource plan not found',
+        details: 'The resource plan you are trying to update does not exist'
+      });
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to update resource plan',
+      details: error.message || 'An unexpected error occurred'
+    });
   }
 });
 

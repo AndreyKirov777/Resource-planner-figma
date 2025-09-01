@@ -187,11 +187,17 @@ export default function App() {
       // Update the database for any changes
       for (const resourcePlan of updatedResourcePlans) {
         if (resourcePlan.id) {
-          await api.updateResourcePlan(resourcePlan.id, resourcePlan);
+          try {
+            await api.updateResourcePlan(resourcePlan.id, resourcePlan);
+          } catch (updateErr) {
+            console.error(`Failed to update resource plan ${resourcePlan.id}:`, updateErr);
+            // Continue with other updates even if one fails
+          }
         }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update resource plans');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update resource plans';
+      setError(errorMessage);
       console.error('Error updating resource plans:', err);
     }
   };
