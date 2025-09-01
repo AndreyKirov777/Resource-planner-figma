@@ -53,6 +53,7 @@ model RateCard {
 model ResourceList {
   id              Int             @id @default(autoincrement())
   role            String
+  clientRole      String?
   name            String?
   intRate         Float
   location        String?

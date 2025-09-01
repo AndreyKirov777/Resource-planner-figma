@@ -35,6 +35,7 @@ export interface RateCard {
 export interface ResourceList {
   id: number;
   role: string;
+  clientRole?: string;
   name?: string;
   intRate: number;
   location?: string;

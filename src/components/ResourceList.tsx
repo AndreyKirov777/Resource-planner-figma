@@ -42,6 +42,7 @@ export function ResourceList({
   onDeleteResourceList 
 }: ResourceListProps) {
   const [newRole, setNewRole] = useState('');
+  const [newClientRole, setNewClientRole] = useState('');
   const [newName, setNewName] = useState('');
   const [newRate, setNewRate] = useState('');
   const [newDescription, setNewDescription] = useState('');
@@ -71,6 +72,20 @@ export function ResourceList({
           const updatedResources = resourceLists.map(resource =>
             resource.id === params.data.id
               ? { ...resource, role: params.newValue }
+              : resource
+          );
+          onResourceListsChange(updatedResources);
+        }
+      },
+      {
+        headerName: 'Client Role',
+        field: 'clientRole',
+        width: 200,
+        editable: true,
+        onCellValueChanged: (params: any) => {
+          const updatedResources = resourceLists.map(resource =>
+            resource.id === params.data.id
+              ? { ...resource, clientRole: params.newValue }
               : resource
           );
           onResourceListsChange(updatedResources);
@@ -152,6 +167,7 @@ export function ResourceList({
     
     const newResource: Partial<ResourceListType> = {
       role: newRole.trim(),
+      clientRole: newClientRole.trim() || undefined,
       name: newName.trim() || undefined,
       intRate: parseFloat(newRate) || 0,
       location: newLocation.trim() || undefined,
@@ -160,6 +176,7 @@ export function ResourceList({
     
     onAddResourceList(newResource);
     setNewRole('');
+    setNewClientRole('');
     setNewName('');
     setNewRate('');
     setNewDescription('');
@@ -186,6 +203,16 @@ export function ResourceList({
                 placeholder="e.g. Senior Developer"
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex-1 min-w-40">
+              <Label htmlFor="newClientRole" className="text-sm font-medium">Client Role</Label>
+              <Input
+                id="newClientRole"
+                placeholder="e.g. Senior Developer"
+                value={newClientRole}
+                onChange={(e) => setNewClientRole(e.target.value)}
                 className="mt-1"
               />
             </div>
