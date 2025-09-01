@@ -103,9 +103,15 @@ export function ResourcePlan({
     return hours * row.clientHourlyRate;
   };
 
-  const calculateMargin = (row: any): number => {
+  const calculateMargin = (row: any): number | null => {
     const clientRate = row.clientHourlyRate;
     const intRateInClientCurrency = row.intHourlyRate / project.exchangeRate;
+    
+    // Return null if client rate is zero or invalid (can't calculate margin)
+    if (!clientRate || clientRate <= 0 || !isFinite(clientRate)) {
+      return null;
+    }
+    
     return ((clientRate - intRateInClientCurrency) / clientRate) * 100;
   };
 
@@ -364,7 +370,12 @@ export function ResourcePlan({
         headerName: 'Margin, per role',
         width: 130,
         valueGetter: (params: any) => calculateMargin(params.data),
-        valueFormatter: (params: any) => `${params.value.toFixed(1)}%`
+        valueFormatter: (params: any) => {
+          if (params.value === null || params.value === undefined) {
+            return '-';
+          }
+          return `${params.value.toFixed(1)}%`;
+        }
       }
     ];
 
