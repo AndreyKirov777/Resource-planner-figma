@@ -75,6 +75,22 @@ export function RateCard({
     }
   }, [rateCards]);
   
+  // Auto-resize columns when regional tab changes
+  React.useEffect(() => {
+    // Small delay to ensure AG Grid has updated the column visibility
+    const timer = setTimeout(() => {
+      const gridElement = document.querySelector('.ag-theme-alpine');
+      if (gridElement && (gridElement as any).__agGridReact) {
+        const gridApi = (gridElement as any).__agGridReact.api;
+        if (gridApi && gridApi.sizeColumnsToFit) {
+          gridApi.sizeColumnsToFit();
+        }
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [activeRegionTab]);
+  
   // Filtered data based on external filters
   const filteredRateCards = useMemo(() => {
     let filtered = rateCards;
@@ -104,247 +120,265 @@ export function RateCard({
     return '';
   };
 
-  const columnDefs: ColDef<RateCardType>[] = [
-    {
-      headerName: 'Action',
-      field: 'id', // Use existing field to avoid TypeScript error
-      sortable: false,
-      filter: false,
-      resizable: false,
-      editable: false,
-      width: 80,
-      cellRenderer: ActionsCellRenderer,
-      pinned: 'left',
-      hide: false
-    },
-    {
-      headerName: 'Role',
-      field: 'role',
-      sortable: true,
-      filter: false,
-      resizable: true,
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, role: params.newValue }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
+  // Dynamic column definitions based on active regional tab
+  const columnDefs: ColDef<RateCardType>[] = useMemo(() => {
+    const baseColumns: ColDef<RateCardType>[] = [
+      {
+        headerName: 'Action',
+        field: 'id', // Use existing field to avoid TypeScript error
+        sortable: false,
+        filter: false,
+        resizable: false,
+        editable: false,
+        width: 80,
+        cellRenderer: ActionsCellRenderer,
+        pinned: 'left',
+        hide: false
+      },
+      {
+        headerName: 'Role',
+        field: 'role',
+        sortable: true,
+        filter: false,
+        resizable: true,
+        editable: true,
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, role: params.newValue }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
+      },
+      {
+        headerName: 'Naming in PM',
+        field: 'namingInPM',
+        sortable: true,
+        filter: false, // Disable built-in filter since we're using external filter
+        resizable: true,
+        editable: true,
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, namingInPM: params.newValue }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
+      },
+      {
+        headerName: 'Discipline',
+        field: 'discipline',
+        sortable: true,
+        filter: false, // Disable built-in filter since we're using external filter
+        resizable: true,
+        editable: true,
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, discipline: params.newValue }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
+      },
+      {
+        headerName: 'Description',
+        field: 'description',
+        sortable: true,
+        filter: false,
+        resizable: true,
+        flex: 1,
+        editable: true,
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, description: params.newValue }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
       }
-    },
-    {
-      headerName: 'Naming in PM',
-      field: 'namingInPM',
-      sortable: true,
-      filter: false, // Disable built-in filter since we're using external filter
-      resizable: true,
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, namingInPM: params.newValue }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
+    ];
+
+    // Regional rate columns with dynamic visibility based on active tab
+    const regionalColumns: ColDef<RateCardType>[] = [
+      {
+        headerName: 'Ukraine',
+        field: 'ukraine',
+        sortable: true,
+        filter: false,
+        resizable: true,
+        valueFormatter: currencyFormatter,
+        type: 'numericColumn',
+        editable: true,
+        hide: activeRegionTab !== 'ukraine',
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, ukraine: parseFloat(params.newValue) || 0 }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
+      },
+      {
+        headerName: 'Eastern Europe',
+        field: 'easternEurope',
+        sortable: true,
+        filter: false,
+        resizable: true,
+        valueFormatter: currencyFormatter,
+        type: 'numericColumn',
+        editable: true,
+        hide: activeRegionTab !== 'eastern-europe',
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, easternEurope: parseFloat(params.newValue) || 0 }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
+      },
+      {
+        headerName: 'Asia (GE)',
+        field: 'asiaGE',
+        sortable: true,
+        filter: false,
+        resizable: true,
+        valueFormatter: currencyFormatter,
+        type: 'numericColumn',
+        editable: true,
+        hide: activeRegionTab !== 'asia-ge',
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, asiaGE: parseFloat(params.newValue) || 0 }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
+      },
+      {
+        headerName: 'Asia (ARM, KZ)',
+        field: 'asiaARMKZ',
+        sortable: true,
+        filter: false,
+        resizable: true,
+        valueFormatter: currencyFormatter,
+        type: 'numericColumn',
+        editable: true,
+        hide: activeRegionTab !== 'asia-arm-kz',
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, asiaARMKZ: parseFloat(params.newValue) || 0 }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
+      },
+      {
+        headerName: 'LATAM',
+        field: 'latam',
+        sortable: true,
+        filter: false,
+        resizable: true,
+        valueFormatter: currencyFormatter,
+        type: 'numericColumn',
+        editable: true,
+        hide: activeRegionTab !== 'latam',
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, latam: parseFloat(params.newValue) || 0 }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
+      },
+      {
+        headerName: 'Mexico',
+        field: 'mexico',
+        sortable: true,
+        filter: false,
+        resizable: true,
+        valueFormatter: currencyFormatter,
+        type: 'numericColumn',
+        editable: true,
+        hide: activeRegionTab !== 'mexico',
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, mexico: parseFloat(params.newValue) || 0 }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
+      },
+      {
+        headerName: 'India',
+        field: 'india',
+        sortable: true,
+        filter: false,
+        resizable: true,
+        valueFormatter: currencyFormatter,
+        type: 'numericColumn',
+        editable: true,
+        hide: activeRegionTab !== 'india',
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, india: parseFloat(params.newValue) || 0 }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
+      },
+      {
+        headerName: 'New York',
+        field: 'newYork',
+        sortable: true,
+        filter: false,
+        resizable: true,
+        valueFormatter: currencyFormatter,
+        type: 'numericColumn',
+        editable: true,
+        hide: activeRegionTab !== 'new-york',
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, newYork: parseFloat(params.newValue) || 0 }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
+      },
+      {
+        headerName: 'London',
+        field: 'london',
+        sortable: true,
+        filter: false,
+        resizable: true,
+        valueFormatter: currencyFormatter,
+        type: 'numericColumn',
+        editable: true,
+        hide: activeRegionTab !== 'london',
+        onCellValueChanged: (params: any) => {
+          const updatedRateCards = rateCards.map(rateCard =>
+            rateCard.id === params.data.id
+              ? { ...rateCard, london: parseFloat(params.newValue) || 0 }
+              : rateCard
+          );
+          onRateCardsChange(updatedRateCards);
+        }
       }
-    },
-    {
-      headerName: 'Discipline',
-      field: 'discipline',
-      sortable: true,
-      filter: false, // Disable built-in filter since we're using external filter
-      resizable: true,
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, discipline: params.newValue }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
-      }
-    },
-    {
-      headerName: 'Description',
-      field: 'description',
-      sortable: true,
-      filter: false,
-      resizable: true,
-      flex: 1,
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, description: params.newValue }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
-      }
-    },
-    {
-      headerName: 'Ukraine',
-      field: 'ukraine',
-      sortable: true,
-      filter: false,
-      resizable: true,
-      valueFormatter: currencyFormatter,
-      type: 'numericColumn',
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, ukraine: parseFloat(params.newValue) || 0 }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
-      }
-    },
-    {
-      headerName: 'Eastern Europe',
-      field: 'easternEurope',
-      sortable: true,
-      filter: false,
-      resizable: true,
-      valueFormatter: currencyFormatter,
-      type: 'numericColumn',
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, easternEurope: parseFloat(params.newValue) || 0 }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
-      }
-    },
-    {
-      headerName: 'Asia (GE)',
-      field: 'asiaGE',
-      sortable: true,
-      filter: false,
-      resizable: true,
-      valueFormatter: currencyFormatter,
-      type: 'numericColumn',
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, asiaGE: parseFloat(params.newValue) || 0 }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
-      }
-    },
-    {
-      headerName: 'Asia (ARM, KZ)',
-      field: 'asiaARMKZ',
-      sortable: true,
-      filter: false,
-      resizable: true,
-      valueFormatter: currencyFormatter,
-      type: 'numericColumn',
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, asiaARMKZ: parseFloat(params.newValue) || 0 }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
-      }
-    },
-    {
-      headerName: 'LATAM',
-      field: 'latam',
-      sortable: true,
-      filter: false,
-      resizable: true,
-      valueFormatter: currencyFormatter,
-      type: 'numericColumn',
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, latam: parseFloat(params.newValue) || 0 }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
-      }
-    },
-    {
-      headerName: 'Mexico',
-      field: 'mexico',
-      sortable: true,
-      filter: false,
-      resizable: true,
-      valueFormatter: currencyFormatter,
-      type: 'numericColumn',
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, mexico: parseFloat(params.newValue) || 0 }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
-      }
-    },
-    {
-      headerName: 'India',
-      field: 'india',
-      sortable: true,
-      filter: false,
-      resizable: true,
-      valueFormatter: currencyFormatter,
-      type: 'numericColumn',
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, india: parseFloat(params.newValue) || 0 }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
-      }
-    },
-    {
-      headerName: 'New York',
-      field: 'newYork',
-      sortable: true,
-      filter: false,
-      resizable: true,
-      valueFormatter: currencyFormatter,
-      type: 'numericColumn',
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, newYork: parseFloat(params.newValue) || 0 }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
-      }
-    },
-    {
-      headerName: 'London',
-      field: 'london',
-      sortable: true,
-      filter: false,
-      resizable: true,
-      valueFormatter: currencyFormatter,
-      type: 'numericColumn',
-      editable: true,
-      onCellValueChanged: (params: any) => {
-        const updatedRateCards = rateCards.map(rateCard =>
-          rateCard.id === params.data.id
-            ? { ...rateCard, london: parseFloat(params.newValue) || 0 }
-            : rateCard
-        );
-        onRateCardsChange(updatedRateCards);
-      }
-    }
-  ];
+    ];
+
+    return [...baseColumns, ...regionalColumns];
+  }, [rateCards, onRateCardsChange, activeRegionTab]);
 
   const handleImportRateCard = async () => {
     try {
@@ -521,19 +555,29 @@ export function RateCard({
       </div>
 
       {/* Regional Tab Switcher */}
-      <Tabs value={activeRegionTab} onValueChange={setActiveRegionTab}>
-        <TabsList className="flex w-full overflow-x-auto">
-          <TabsTrigger value="ukraine">Ukraine</TabsTrigger>
-          <TabsTrigger value="eastern-europe">Eastern Europe</TabsTrigger>
-          <TabsTrigger value="asia-ge">Asia (GE)</TabsTrigger>
-          <TabsTrigger value="asia-arm-kz">Asia (ARM,KZ)</TabsTrigger>
-          <TabsTrigger value="latam">LATAM</TabsTrigger>
-          <TabsTrigger value="mexico">Mexico</TabsTrigger>
-          <TabsTrigger value="india">India</TabsTrigger>
-          <TabsTrigger value="new-york">New York</TabsTrigger>
-          <TabsTrigger value="london">London</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700">Regional View:</span>
+          <span className="text-sm text-gray-500">
+            Showing rates for: <span className="font-semibold text-blue-600 capitalize">
+              {activeRegionTab.replace('-', ' ')}
+            </span>
+          </span>
+        </div>
+        <Tabs value={activeRegionTab} onValueChange={setActiveRegionTab}>
+          <TabsList className="flex w-full overflow-x-auto">
+            <TabsTrigger value="ukraine">Ukraine</TabsTrigger>
+            <TabsTrigger value="eastern-europe">Eastern Europe</TabsTrigger>
+            <TabsTrigger value="asia-ge">Asia (GE)</TabsTrigger>
+            <TabsTrigger value="asia-arm-kz">Asia (ARM,KZ)</TabsTrigger>
+            <TabsTrigger value="latam">LATAM</TabsTrigger>
+            <TabsTrigger value="mexico">Mexico</TabsTrigger>
+            <TabsTrigger value="india">India</TabsTrigger>
+            <TabsTrigger value="new-york">New York</TabsTrigger>
+            <TabsTrigger value="london">London</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
       <div className="ag-theme-alpine" style={{ height: 600, width: '100%' }}>
         <AgGridReact
           rowData={filteredRateCards}
