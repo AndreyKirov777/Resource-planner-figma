@@ -556,14 +556,7 @@ export function RateCard({
 
       {/* Regional Tab Switcher */}
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700">Regional View:</span>
-          <span className="text-sm text-gray-500">
-            Showing rates for: <span className="font-semibold text-blue-600 capitalize">
-              {activeRegionTab.replace('-', ' ')}
-            </span>
-          </span>
-        </div>
+     
         <Tabs value={activeRegionTab} onValueChange={setActiveRegionTab}>
           <TabsList className="flex w-full overflow-x-auto">
             <TabsTrigger value="ukraine">Ukraine</TabsTrigger>
