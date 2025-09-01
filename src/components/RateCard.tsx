@@ -23,11 +23,11 @@ const ActionsCellRenderer = (props: any) => {
 
   return (
     <div className="flex items-center justify-center h-full">
-      <button
-        onClick={addRateCard}
-        className="bg-green-500 hover:bg-green-600 text-white border-none rounded-full cursor-pointer px-3 py-2 text-xs flex items-center gap-1 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md font-medium"
-        title="Add rate card"
-      >
+             <button
+         onClick={addRateCard}
+         className="bg-green-500 hover:bg-green-600 text-white border-none rounded-md cursor-pointer px-4 py-0.25 text-xs flex items-center gap-1 transition-all duration-200 ease-in-out shadow-sm hover:shadow-md font-medium"
+         title="Add rate card"
+       >
         <ArrowLeft className="h-3 w-3" />
         Add
       </button>
@@ -580,6 +580,7 @@ export function RateCard({
       </div>
       <div className="ag-theme-alpine" style={{ height: 600, width: '100%' }}>
         <AgGridReact
+          theme="legacy"
           rowData={filteredRateCards}
           columnDefs={columnDefs}
           pagination={true}
