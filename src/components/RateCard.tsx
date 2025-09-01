@@ -43,6 +43,7 @@ interface RateCardProps {
   onAddRateCardsBulk: (rateCards: Partial<RateCardType>[]) => Promise<{ message: string; count: number }>;
   onDeleteRateCard: (id: number) => void;
   onDeleteAllRateCards: () => void;
+  onAddResourceList?: (resource: any) => void; // Add this prop for resource list integration
 }
 
 export function RateCard({ 
@@ -52,7 +53,8 @@ export function RateCard({
   onAddRateCard,
   onAddRateCardsBulk,
   onDeleteRateCard,
-  onDeleteAllRateCards 
+  onDeleteAllRateCards,
+  onAddResourceList 
 }: RateCardProps) {
   // State for external filters
   const [namingInPMFilter, setNamingInPMFilter] = useState<string>('all');
@@ -490,10 +492,78 @@ export function RateCard({
     }
   };
 
-  // Empty click handler for Add button - to be implemented later
-  const handleAddRateCard = (rateCardData: any) => {
-    // TODO: Implement add rate card functionality
-    console.log('Add rate card clicked for:', rateCardData);
+  // Enhanced Add button handler that adds to resource list
+  const handleAddRateCard = (rateCardData: RateCardType) => {
+    if (!onAddResourceList) {
+      console.warn('onAddResourceList prop not provided - cannot add to resource list');
+      return;
+    }
+
+    // Get the daily rate based on active regional tab
+    let dailyRate = 0;
+    let location = '';
+    
+    switch (activeRegionTab) {
+      case 'ukraine':
+        dailyRate = rateCardData.ukraine * 8; // Convert hourly to daily (8 hours)
+        location = 'Ukraine';
+        break;
+      case 'eastern-europe':
+        dailyRate = rateCardData.easternEurope * 8;
+        location = 'Eastern Europe';
+        break;
+      case 'asia-ge':
+        dailyRate = rateCardData.asiaGE * 8;
+        location = 'Asia (GE)';
+        break;
+      case 'asia-arm-kz':
+        dailyRate = rateCardData.asiaARMKZ * 8;
+        location = 'Asia (ARM,KZ)';
+        break;
+      case 'latam':
+        dailyRate = rateCardData.latam * 8;
+        location = 'LATAM';
+        break;
+      case 'mexico':
+        dailyRate = rateCardData.mexico * 8;
+        location = 'Mexico';
+        break;
+      case 'india':
+        dailyRate = rateCardData.india * 8;
+        location = 'India';
+        break;
+      case 'new-york':
+        dailyRate = rateCardData.newYork * 8;
+        location = 'New York';
+        break;
+      case 'london':
+        dailyRate = rateCardData.london * 8;
+        location = 'London';
+        break;
+      default:
+        dailyRate = rateCardData.ukraine * 8; // Default to Ukraine
+        location = 'Ukraine';
+    }
+
+    // Create new resource list entry with copied data
+    const newResource: any = {
+      role: rateCardData.role,
+      description: rateCardData.description,
+      intRate: dailyRate / 8, // Convert daily rate back to hourly for internal rate
+      location: location,
+      projectId: projectId
+    };
+
+    // Add to resource list
+    onAddResourceList(newResource);
+    
+    console.log('Added rate card to resource list:', {
+      original: rateCardData,
+      newResource,
+      activeTab: activeRegionTab,
+      dailyRate,
+      location
+    });
   };
 
   // Make add function globally available for AG Grid buttons

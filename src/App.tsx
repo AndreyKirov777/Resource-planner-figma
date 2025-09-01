@@ -319,6 +319,7 @@ export default function App() {
             onAddRateCardsBulk={handleAddRateCardsBulk}
             onDeleteRateCard={handleDeleteRateCard}
             onDeleteAllRateCards={handleDeleteAllRateCards}
+            onAddResourceList={handleAddResourceList}
           />
         </TabsContent>
       </Tabs>
