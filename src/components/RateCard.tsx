@@ -4,6 +4,7 @@ import { ColDef } from 'ag-grid-community';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Plus, Trash2, Search, X, ArrowLeft } from 'lucide-react';
 import * as ExcelJS from 'exceljs';
 import { RateCard as RateCardType } from '../services/api';
@@ -60,6 +61,9 @@ export function RateCard({
   // State for arrays created from Excel import
   const [namingInPMArray, setNamingInPMArray] = useState<string[]>([]);
   const [disciplineArray, setDisciplineArray] = useState<string[]>([]);
+  
+  // State for regional tab selection
+  const [activeRegionTab, setActiveRegionTab] = useState<string>('ukraine');
   
   // Update arrays when rateCards change (for existing data)
   React.useEffect(() => {
@@ -515,6 +519,21 @@ export function RateCard({
           </Select>
         </div>
       </div>
+
+      {/* Regional Tab Switcher */}
+      <Tabs value={activeRegionTab} onValueChange={setActiveRegionTab}>
+        <TabsList className="flex w-full overflow-x-auto">
+          <TabsTrigger value="ukraine">Ukraine</TabsTrigger>
+          <TabsTrigger value="eastern-europe">Eastern Europe</TabsTrigger>
+          <TabsTrigger value="asia-ge">Asia (GE)</TabsTrigger>
+          <TabsTrigger value="asia-arm-kz">Asia (ARM,KZ)</TabsTrigger>
+          <TabsTrigger value="latam">LATAM</TabsTrigger>
+          <TabsTrigger value="mexico">Mexico</TabsTrigger>
+          <TabsTrigger value="india">India</TabsTrigger>
+          <TabsTrigger value="new-york">New York</TabsTrigger>
+          <TabsTrigger value="london">London</TabsTrigger>
+        </TabsList>
+      </Tabs>
       <div className="ag-theme-alpine" style={{ height: 600, width: '100%' }}>
         <AgGridReact
           rowData={filteredRateCards}
