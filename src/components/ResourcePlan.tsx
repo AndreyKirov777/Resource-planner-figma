@@ -222,6 +222,47 @@ export function ResourcePlan({
         cellEditorParams: {
           values: resourceLists.map(r => r.role)
         },
+        valueGetter: (params: any) => params.data.role,
+        valueSetter: (params: any) => {
+          const newValue = params.newValue;
+          
+          // Update the cell data immediately for instant visual feedback
+          params.data.role = newValue;
+          
+          // Find the selected resource to auto-populate other fields
+          const selectedResource = resourceLists.find(r => r.role === newValue);
+          if (selectedResource) {
+            // Auto-populate fields from the selected resource
+            params.data.intHourlyRate = selectedResource.intRate;
+            params.data.name = selectedResource.name || '';
+            
+            // Update the resource plan with all the new data
+            const updatedResourcePlans = resourcePlans.map(plan =>
+              plan.id === params.data.id
+                ? { 
+                    ...plan, 
+                    role: newValue,
+                    intHourlyRate: selectedResource.intRate,
+                    name: selectedResource.name || ''
+                  }
+                : plan
+            );
+            onResourcePlansChange(updatedResourcePlans);
+          } else {
+            // If role doesn't exist in resourceLists, show a warning but still allow the update
+            console.warn(`Role "${newValue}" not found in resource list. This may cause issues.`);
+            
+            // Update the resource plan with just the role field
+            const updatedResourcePlans = resourcePlans.map(plan =>
+              plan.id === params.data.id
+                ? { ...plan, role: newValue }
+                : plan
+            );
+            onResourcePlansChange(updatedResourcePlans);
+          }
+          
+          return true; // Return true to indicate the value was set successfully
+        },
         cellRenderer: (params: any) => {
           const role = params.value;
           const isValidRole = validateRole(role);
@@ -236,38 +277,6 @@ export function ResourcePlan({
               )}
             </div>
           );
-        },
-        onCellValueChanged: (params: any) => {
-          const selectedResource = resourceLists.find(r => r.role === params.newValue);
-          if (selectedResource) {
-            // Auto-populate fields from the selected resource
-            params.node.setDataValue('intHourlyRate', selectedResource.intRate);
-            params.node.setDataValue('name', selectedResource.name || '');
-            
-            // Update the resource plan with all the new data
-            const updatedResourcePlans = resourcePlans.map(plan =>
-              plan.id === params.data.id
-                ? { 
-                    ...plan, 
-                    role: params.newValue,
-                    intHourlyRate: selectedResource.intRate,
-                    name: selectedResource.name || ''
-                  }
-                : plan
-            );
-            onResourcePlansChange(updatedResourcePlans);
-          } else {
-            // If role doesn't exist in resourceLists, show a warning but still allow the update
-            console.warn(`Role "${params.newValue}" not found in resource list. This may cause issues.`);
-            
-            // Update the resource plan with just the role field
-            const updatedResourcePlans = resourcePlans.map(plan =>
-              plan.id === params.data.id
-                ? { ...plan, role: params.newValue }
-                : plan
-            );
-            onResourcePlansChange(updatedResourcePlans);
-          }
         }
       },
       {
@@ -276,13 +285,21 @@ export function ResourcePlan({
         width: 150,
         pinned: 'left',
         editable: true,
-        onCellValueChanged: (params: any) => {
+        valueSetter: (params: any) => {
+          const newValue = params.newValue;
+          
+          // Update the cell data immediately for instant visual feedback
+          params.data.name = newValue;
+          
+          // Update the resource plan
           const updatedResourcePlans = resourcePlans.map(plan =>
             plan.id === params.data.id
-              ? { ...plan, name: params.newValue }
+              ? { ...plan, name: newValue }
               : plan
           );
           onResourcePlansChange(updatedResourcePlans);
+          
+          return true;
         }
       },
       {
@@ -291,13 +308,21 @@ export function ResourcePlan({
         width: 140,
         editable: true,
         valueFormatter: (params: any) => `$${params.value.toFixed(2)}`,
-        onCellValueChanged: (params: any) => {
+        valueSetter: (params: any) => {
+          const newValue = parseFloat(params.newValue) || 0;
+          
+          // Update the cell data immediately for instant visual feedback
+          params.data.intHourlyRate = newValue;
+          
+          // Update the resource plan
           const updatedResourcePlans = resourcePlans.map(plan =>
             plan.id === params.data.id
-              ? { ...plan, intHourlyRate: parseFloat(params.newValue) || 0 }
+              ? { ...plan, intHourlyRate: newValue }
               : plan
           );
           onResourcePlansChange(updatedResourcePlans);
+          
+          return true;
         }
       },
       {
@@ -312,13 +337,21 @@ export function ResourcePlan({
         width: 160,
         editable: true,
         valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`,
-        onCellValueChanged: (params: any) => {
+        valueSetter: (params: any) => {
+          const newValue = parseFloat(params.newValue) || 0;
+          
+          // Update the cell data immediately for instant visual feedback
+          params.data.clientHourlyRate = newValue;
+          
+          // Update the resource plan
           const updatedResourcePlans = resourcePlans.map(plan =>
             plan.id === params.data.id
-              ? { ...plan, clientHourlyRate: parseFloat(params.newValue) || 0 }
+              ? { ...plan, clientHourlyRate: newValue }
               : plan
           );
           onResourcePlansChange(updatedResourcePlans);
+          
+          return true;
         }
       },
       {
@@ -409,26 +442,29 @@ export function ResourcePlan({
         `
       },
       valueFormatter: (params: any) => `${params.value || 0}%`,
-      valueSetter: (params: any) => {
-        const value = parseInt(params.newValue) || 0;
-        params.data[`week${weekNum}`] = Math.max(0, Math.min(100, value));
-        
-        // Update the weekly allocation in the database
-        const updatedResourcePlans = resourcePlans.map(plan => {
-          if (plan.id === params.data.id) {
-            const updatedAllocations = plan.weeklyAllocations.map(wa =>
-              wa.weekNumber === weekNum
-                ? { ...wa, allocation: value }
-                : wa
-            );
-            return { ...plan, weeklyAllocations: updatedAllocations };
-          }
-          return plan;
-        });
-        onResourcePlansChange(updatedResourcePlans);
-        
-        return true;
-      }
+             valueSetter: (params: any) => {
+         const value = parseInt(params.newValue) || 0;
+         const clampedValue = Math.max(0, Math.min(100, value));
+         
+         // Update the cell data immediately for instant visual feedback
+         params.data[`week${weekNum}`] = clampedValue;
+         
+         // Update the weekly allocation in the database
+         const updatedResourcePlans = resourcePlans.map(plan => {
+           if (plan.id === params.data.id) {
+             const updatedAllocations = plan.weeklyAllocations.map(wa =>
+               wa.weekNumber === weekNum
+                 ? { ...wa, allocation: clampedValue }
+                 : wa
+             );
+             return { ...plan, weeklyAllocations: updatedAllocations };
+           }
+           return plan;
+         });
+         onResourcePlansChange(updatedResourcePlans);
+         
+         return true;
+       }
     }));
 
     const calculationColumns = [
