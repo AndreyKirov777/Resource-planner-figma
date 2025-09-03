@@ -55,8 +55,8 @@ export function ResourceList({
   const columnDefs = useMemo(() => {
     // Actions column - moved to first position
     const actionsColumn = {
-      headerName: 'Actions',
-      width: 100,
+      headerName: '',
+      width: 80,
       cellRenderer: ActionsCellRenderer,
       sortable: false,
       filter: false
@@ -64,7 +64,7 @@ export function ResourceList({
 
     const otherColumns = [
       {
-        headerName: 'Role',
+        headerName: 'Rate card role',
         field: 'role',
         width: 200,
         editable: true,
@@ -106,21 +106,6 @@ export function ResourceList({
         }
       },
       {
-        headerName: 'Internal Rate ($/h)',
-        field: 'intRate',
-        width: 150,
-        editable: true,
-        valueFormatter: (params: any) => `$${params.value.toFixed(2)}`,
-        onCellValueChanged: (params: any) => {
-          const updatedResources = resourceLists.map(resource =>
-            resource.id === params.data.id
-              ? { ...resource, intRate: parseFloat(params.newValue) || 0 }
-              : resource
-          );
-          onResourceListsChange(updatedResources);
-        }
-      },
-      {
         headerName: 'Location',
         field: 'location',
         width: 120,
@@ -135,7 +120,23 @@ export function ResourceList({
         }
       },
       {
-        headerName: 'Daily Rate ($/day)',
+        headerName: 'Hourly cost',
+        field: 'intRate',
+        width: 150,
+        editable: true,
+        valueFormatter: (params: any) => `$${params.value.toFixed(2)}`,
+        onCellValueChanged: (params: any) => {
+          const updatedResources = resourceLists.map(resource =>
+            resource.id === params.data.id
+              ? { ...resource, intRate: parseFloat(params.newValue) || 0 }
+              : resource
+          );
+          onResourceListsChange(updatedResources);
+        }
+      },
+
+      {
+        headerName: 'Daily cost',
         width: 140,
         valueGetter: (params: any) => params.data.intRate * 8,
         valueFormatter: (params: any) => `$${params.value.toFixed(2)}`
@@ -143,7 +144,7 @@ export function ResourceList({
       {
         headerName: 'Description',
         field: 'description',
-        width: 250,
+        width: 360,
         editable: true,
         onCellValueChanged: (params: any) => {
           const updatedResources = resourceLists.map(resource =>
@@ -192,12 +193,12 @@ export function ResourceList({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Add New Resource</CardTitle>
+          <CardTitle>Add custome resource</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-end gap-3 flex-wrap">
             <div className="flex-1 min-w-40">
-              <Label htmlFor="newRole" className="text-sm font-medium">Role Name</Label>
+              <Label htmlFor="newRole" className="text-sm font-medium">Rate card role</Label>
               <Input
                 id="newRole"
                 placeholder="e.g. Senior Developer"

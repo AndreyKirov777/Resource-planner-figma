@@ -141,7 +141,7 @@ export function RateCard({
   const columnDefs: ColDef<RateCardType>[] = useMemo(() => {
     const baseColumns: ColDef<RateCardType>[] = [
       {
-        headerName: 'Action',
+        headerName: '',
         field: 'id', // Use existing field to avoid TypeScript error
         sortable: false,
         filter: false,
@@ -153,7 +153,7 @@ export function RateCard({
         hide: false
       },
       {
-        headerName: 'Role',
+        headerName: 'Rate card role',
         field: 'role',
         sortable: true,
         filter: false,

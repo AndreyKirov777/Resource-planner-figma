@@ -220,7 +220,7 @@ export function ResourcePlan({
 
     const baseColumns = [
       {
-        headerName: 'Role',
+        headerName: 'Rate card role',
         field: 'role',
         width: 200,
         pinned: 'left',
