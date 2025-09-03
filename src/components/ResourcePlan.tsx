@@ -417,41 +417,22 @@ export function ResourcePlan({
       }
     ];
 
-    const weekColumns = weekNumbers.map((weekNum, index) => ({
-      headerName: `${weekNum}`,
-      field: `week${weekNum}`,
-      width: 80,
-      editable: true,
-      filter: false,
-      headerComponentParams: {
-        template: `
-          <div style="display: flex; align-items: center; justify-content: center; width: 100%; position: relative;">
-            <button 
-              onclick="insertWeekAfter(${index})" 
-              style="
-                position: absolute;
-                left: -12px;
-                background: #6b7280; 
-                color: white; 
-                border: none; 
-                border-radius: 50%; 
-                width: 16px; 
-                height: 16px; 
-                display: flex; 
-                align-items: center; 
-                justify-content: center; 
-                font-size: 12px; 
-                cursor: pointer; 
-                z-index: 10;
-                line-height: 1;
-              "
-              title="Insert week after position ${index}"
-            >+</button>
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <span>${weekNum}</span>
-              ${weekNumbers.length > 1 ? `<button 
-                onclick="removeWeek(${weekNum})" 
+    const weekColumns = [{
+      headerName: 'Weeks',
+      children: weekNumbers.map((weekNum, index) => ({
+        headerName: `${weekNum}`,
+        field: `week${weekNum}`,
+        width: 80,
+        editable: true,
+        filter: false,
+        headerComponentParams: {
+          template: `
+            <div style="display: flex; align-items: center; justify-content: center; width: 100%; position: relative;">
+              <button 
+                onclick="insertWeekAfter(${index})" 
                 style="
+                  position: absolute;
+                  left: -12px;
                   background: #6b7280; 
                   color: white; 
                   border: none; 
@@ -462,74 +443,96 @@ export function ResourcePlan({
                   align-items: center; 
                   justify-content: center; 
                   font-size: 12px; 
-                  cursor: pointer;
+                  cursor: pointer; 
+                  z-index: 10;
+                  line-height: 1;
                 "
-              >−</button>` : ''}
+                title="Insert week after position ${index}"
+              >+</button>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <span>${weekNum}</span>
+                ${weekNumbers.length > 1 ? `<button 
+                  onclick="removeWeek(${weekNum})" 
+                  style="
+                    background: #6b7280; 
+                    color: white; 
+                    border: none; 
+                    border-radius: 50%; 
+                    width: 16px; 
+                    height: 16px; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    font-size: 12px; 
+                    cursor: pointer;
+                  "
+                >−</button>` : ''}
+              </div>
+              ${index === weekNumbers.length - 1 ? `<button 
+                onclick="insertWeekAfter(${index + 1})" 
+                style="
+                  position: absolute;
+                  right: -12px;
+                  background: #6b7280; 
+                  color: white; 
+                  border: none; 
+                  border-radius: 50%; 
+                  width: 16px; 
+                  height: 16px; 
+                  display: flex; 
+                  align-items: center; 
+                  justify-content: center; 
+                  font-size: 12px; 
+                  cursor: pointer; 
+                  z-index: 10;
+                  line-height: 1;
+                "
+                title="Add week at end"
+              >+</button>` : ''}
             </div>
-            ${index === weekNumbers.length - 1 ? `<button 
-              onclick="insertWeekAfter(${index + 1})" 
-              style="
-                position: absolute;
-                right: -12px;
-                background: #6b7280; 
-                color: white; 
-                border: none; 
-                border-radius: 50%; 
-                width: 16px; 
-                height: 16px; 
-                display: flex; 
-                align-items: center; 
-                justify-content: center; 
-                font-size: 12px; 
-                cursor: pointer; 
-                z-index: 10;
-                line-height: 1;
-              "
-              title="Add week at end"
-            >+</button>` : ''}
-          </div>
-        `
-      },
-      valueFormatter: (params: any) => `${params.value || 0}%`,
-      valueSetter: (params: any) => {
-        const value = parseInt(params.newValue) || 0;
-        const clampedValue = Math.max(0, Math.min(100, value));
+          `
+        },
+        valueFormatter: (params: any) => `${params.value || 0}%`,
+        valueSetter: (params: any) => {
+          const value = parseInt(params.newValue) || 0;
+          const clampedValue = Math.max(0, Math.min(100, value));
 
-        // Update the cell data immediately for instant visual feedback
-        params.data[`week${weekNum}`] = clampedValue;
+          // Update the cell data immediately for instant visual feedback
+          params.data[`week${weekNum}`] = clampedValue;
 
-        // Persist into resourcePlans; create allocation if missing
-        const updatedResourcePlans = resourcePlans.map(plan => {
-          if (plan.id !== params.data.id) return plan;
+          // Persist into resourcePlans; create allocation if missing
+          const updatedResourcePlans = resourcePlans.map(plan => {
+            if (plan.id !== params.data.id) return plan;
 
-          const existing = plan.weeklyAllocations.find(wa => wa.weekNumber === weekNum);
-          if (existing) {
-            const updatedAllocations = plan.weeklyAllocations.map(wa =>
-              wa.weekNumber === weekNum
-                ? { ...wa, allocation: clampedValue, updatedAt: new Date().toISOString() }
-                : wa
-            );
-            return { ...plan, weeklyAllocations: updatedAllocations };
-          }
+            const existing = plan.weeklyAllocations.find(wa => wa.weekNumber === weekNum);
+            if (existing) {
+              const updatedAllocations = plan.weeklyAllocations.map(wa =>
+                wa.weekNumber === weekNum
+                  ? { ...wa, allocation: clampedValue, updatedAt: new Date().toISOString() }
+                  : wa
+              );
+              return { ...plan, weeklyAllocations: updatedAllocations };
+            }
 
-          // If allocation for this week does not exist (e.g., plan was missing this week), add it
-          const now = new Date().toISOString();
-          const newAllocation = {
-            id: 0, // Temporary ID, will be replaced by database
-            weekNumber: weekNum,
-            allocation: clampedValue,
-            resourcePlanId: plan.id,
-            createdAt: now,
-            updatedAt: now,
-          } as WeeklyAllocation;
+            // If allocation for this week does not exist (e.g., plan was missing this week), add it
+            const now = new Date().toISOString();
+            const newAllocation = {
+              id: 0, // Temporary ID, will be replaced by database
+              weekNumber: weekNum,
+              allocation: clampedValue,
+              resourcePlanId: plan.id,
+              createdAt: now,
+              updatedAt: now,
+            } as WeeklyAllocation;
 
-          return { ...plan, weeklyAllocations: [...plan.weeklyAllocations, newAllocation] };
-        });
+            return { ...plan, weeklyAllocations: [...plan.weeklyAllocations, newAllocation] };
+          });
 
-        onResourcePlansChange(updatedResourcePlans);
-        return true;
-      }
-    }));
+          onResourcePlansChange(updatedResourcePlans);
+          return true;
+        }
+      }))
+    }];
 
     const calculationColumns = [
       {
