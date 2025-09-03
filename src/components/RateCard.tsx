@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Plus, Trash2, Search, X, ArrowLeft } from 'lucide-react';
 import * as ExcelJS from 'exceljs';
 import { RateCard as RateCardType } from '../services/api';
+import { getClientRoleFromRole } from '../utils/clientRoleMapping';
 
 // Import AG Grid styles
 import 'ag-grid-community/styles/ag-grid.css';
@@ -559,9 +560,13 @@ export function RateCard({
         location = 'Ukraine';
     }
 
+    // Get the client role from the role mapping
+    const clientRole = getClientRoleFromRole(rateCardData.role);
+
     // Create new resource list entry with copied data
     const newResource: any = {
       role: rateCardData.role,
+      clientRole: clientRole, // Automatically populate client role
       description: rateCardData.description,
       intRate: dailyRate / 8, // Convert daily rate back to hourly for internal rate
       location: location,
@@ -576,7 +581,8 @@ export function RateCard({
       newResource,
       activeTab: activeRegionTab,
       dailyRate,
-      location
+      location,
+      clientRole
     });
   };
 
