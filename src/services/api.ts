@@ -57,6 +57,7 @@ export interface WeeklyAllocation {
 export interface ResourcePlan {
   id: number;
   role: string;
+  clientRole?: string;  // Added client role field
   name?: string;
   intHourlyRate: number;
   clientHourlyRate: number;

@@ -69,6 +69,7 @@ model ResourceList {
 model ResourcePlan {
   id              Int             @id @default(autoincrement())
   role            String
+  clientRole      String?         // Added client role field
   name            String?
   intHourlyRate   Float
   clientHourlyRate Float

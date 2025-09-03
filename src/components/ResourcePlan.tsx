@@ -70,6 +70,7 @@ export function ResourcePlan({
       const row: any = {
         id: plan.id,
         role: plan.role,
+        clientRole: plan.clientRole || '',  // Added client role field
         name: plan.name || '',
         intHourlyRate: plan.intHourlyRate,
         clientHourlyRate: plan.clientHourlyRate
@@ -241,6 +242,7 @@ export function ResourcePlan({
             // Auto-populate fields from the selected resource
             params.data.intHourlyRate = selectedResource.intRate;
             params.data.name = selectedResource.name || '';
+            params.data.clientRole = selectedResource.clientRole || '';  // Auto-populate client role
             
             // Update the resource plan with all the new data
             const updatedResourcePlans = resourcePlans.map(plan =>
@@ -249,7 +251,8 @@ export function ResourcePlan({
                     ...plan, 
                     role: newValue,
                     intHourlyRate: selectedResource.intRate,
-                    name: selectedResource.name || ''
+                    name: selectedResource.name || '',
+                    clientRole: selectedResource.clientRole || ''  // Update client role
                   }
                 : plan
             );
@@ -283,6 +286,29 @@ export function ResourcePlan({
               )}
             </div>
           );
+        }
+      },
+      {
+        headerName: 'Client Role',
+        field: 'clientRole',
+        width: 150,
+        pinned: 'left',
+        editable: true,
+        valueSetter: (params: any) => {
+          const newValue = params.newValue;
+          
+          // Update the cell data immediately for instant visual feedback
+          params.data.clientRole = newValue;
+          
+          // Update the resource plan
+          const updatedResourcePlans = resourcePlans.map(plan =>
+            plan.id === params.data.id
+              ? { ...plan, clientRole: newValue }
+              : plan
+          );
+          onResourcePlansChange(updatedResourcePlans);
+          
+          return true;
         }
       },
       {
@@ -544,6 +570,7 @@ export function ResourcePlan({
   const addRole = useCallback(() => {
     const newResourcePlan: Partial<ResourcePlanType> = {
       role: '',
+      clientRole: '',  // Added client role field
       name: '',
       intHourlyRate: 0,
       clientHourlyRate: 0,
