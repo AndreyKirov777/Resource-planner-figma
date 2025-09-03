@@ -209,8 +209,8 @@ export function ResourcePlan({
   const columnDefs = useMemo(() => {
     // Actions column - moved to first position
     const actionsColumn = {
-      headerName: 'Actions',
-      width: 80,
+      headerName: '',
+      width: 60,
       pinned: 'left',
       cellRenderer: ActionsCellRenderer,
       sortable: false,
@@ -313,9 +313,9 @@ export function ResourcePlan({
         headerName: 'Internal',
         children: [
           {
-            headerName: 'Int hourly rate, $/h',
+            headerName: 'Hourly cost',
             field: 'intHourlyRate',
-            width: 140,
+            width: 120,
             editable: true,
             valueFormatter: (params: any) => `$${params.value.toFixed(2)}`,
             valueSetter: (params: any) => {
@@ -336,7 +336,7 @@ export function ResourcePlan({
             }
           },
           {
-            headerName: 'Int daily rate, $',
+            headerName: 'Daily cost',
             width: 120,
             valueGetter: (params: any) => params.data.intHourlyRate * 8,
             valueFormatter: (params: any) => `$${params.value.toFixed(2)}`
@@ -348,9 +348,9 @@ export function ResourcePlan({
         headerName: 'Client',
         children: [
           {
-            headerName: `Hourly rate (Client Rate)`,
+            headerName: `Hourly rate`,
             field: 'clientHourlyRate',
-            width: 160,
+            width: 120,
             editable: true,
             valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`,
             valueSetter: (params: any) => {
@@ -371,14 +371,14 @@ export function ResourcePlan({
             }
           },
           {
-            headerName: `Daily rate (Client Rate)`,
-            width: 150,
+            headerName: `Daily rate`,
+            width: 120,
             valueGetter: (params: any) => params.data.clientHourlyRate * 8,
             valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`
           },
           {
-            headerName: 'Margin, per role',
-            width: 130,
+            headerName: 'Margin',
+            width: 100,
             valueGetter: (params: any) => calculateMargin(params.data),
             valueFormatter: (params: any) => {
               if (params.value === null || params.value === undefined) {
@@ -492,7 +492,7 @@ export function ResourcePlan({
 
     const calculationColumns = [
       {
-        headerName: 'Total int cost, $',
+        headerName: 'Total int cost',
         width: 130,
         valueGetter: (params: any) => calculateTotalIntCost(params.data),
         valueFormatter: (params: any) => `$${params.value.toFixed(2)}`
@@ -504,8 +504,8 @@ export function ResourcePlan({
         valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`
       },
       {
-        headerName: 'Estimated efforts, h',
-        width: 140,
+        headerName: 'Efforts, h',
+        width: 120,
         valueGetter: (params: any) => calculateEstimatedEfforts(params.data),
         valueFormatter: (params: any) => `${params.value.toFixed(1)}`
       }
