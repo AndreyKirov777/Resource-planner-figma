@@ -188,11 +188,34 @@ export default function App() {
       for (const resourcePlan of updatedResourcePlans) {
         if (resourcePlan.id) {
           try {
-            await api.updateResourcePlan(resourcePlan.id, resourcePlan);
+            // Ensure weekly allocations are properly included in the update
+            const updateData = {
+              ...resourcePlan,
+              weeklyAllocations: resourcePlan.weeklyAllocations.map(wa => ({
+                id: wa.id,
+                weekNumber: wa.weekNumber,
+                allocation: wa.allocation,
+                resourcePlanId: wa.resourcePlanId,
+                createdAt: wa.createdAt,
+                updatedAt: wa.updatedAt
+              }))
+            };
+            
+            await api.updateResourcePlan(resourcePlan.id, updateData);
           } catch (updateErr) {
             console.error(`Failed to update resource plan ${resourcePlan.id}:`, updateErr);
             // Continue with other updates even if one fails
           }
+        }
+      }
+      
+      // Refresh the resource plans data to get updated IDs and ensure consistency
+      if (currentProject) {
+        try {
+          const refreshedResourcePlans = await api.getResourcePlans(currentProject.id);
+          setResourcePlans(refreshedResourcePlans);
+        } catch (refreshErr) {
+          console.error('Failed to refresh resource plans:', refreshErr);
         }
       }
     } catch (err) {
@@ -208,6 +231,14 @@ export default function App() {
     try {
       const createdResourcePlan = await api.createResourcePlan(currentProject.id, newResourcePlan);
       setResourcePlans(prev => [...prev, createdResourcePlan]);
+      
+      // Refresh the resource plans data to ensure consistency
+      try {
+        const refreshedResourcePlans = await api.getResourcePlans(currentProject.id);
+        setResourcePlans(refreshedResourcePlans);
+      } catch (refreshErr) {
+        console.error('Failed to refresh resource plans after creation:', refreshErr);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add resource plan');
       console.error('Error adding resource plan:', err);

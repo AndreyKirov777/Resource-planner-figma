@@ -270,12 +270,21 @@ app.post('/api/projects/:projectId/resource-plans', async (req, res) => {
   try {
     const { weeklyAllocations, ...resourcePlanData } = req.body;
     
+    // Filter and validate weekly allocations
+    const validAllocations = (weeklyAllocations || [])
+      .filter((wa: any) => wa && typeof wa === 'object')
+      .map((wa: any) => ({
+        weekNumber: parseInt(wa.weekNumber) || 0,
+        allocation: parseInt(wa.allocation) || 0
+      }))
+      .filter(wa => wa.weekNumber > 0); // Only create allocations with valid week numbers
+    
     const resourcePlan = await prisma.resourcePlan.create({
       data: {
         ...resourcePlanData,
         projectId: parseInt(req.params.projectId),
         weeklyAllocations: {
-          create: weeklyAllocations || []
+          create: validAllocations
         }
       },
       include: {
@@ -284,7 +293,11 @@ app.post('/api/projects/:projectId/resource-plans', async (req, res) => {
     });
     res.json(resourcePlan);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to create resource plan' });
+    console.error('Error creating resource plan:', error);
+    res.status(500).json({ 
+      error: 'Failed to create resource plan',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
@@ -316,13 +329,21 @@ app.put('/api/resource-plans/:id', async (req, res) => {
         where: { resourcePlanId: parseInt(req.params.id) }
       });
       
-      // Create new allocations
-      await prisma.weeklyAllocation.createMany({
-        data: weeklyAllocations.map((wa: any) => ({
-          ...wa,
+      // Create new allocations, filtering out any with id=0 and ensuring proper data structure
+      const validAllocations = weeklyAllocations
+        .filter((wa: any) => wa && typeof wa === 'object')
+        .map((wa: any) => ({
+          weekNumber: parseInt(wa.weekNumber) || 0,
+          allocation: parseInt(wa.allocation) || 0,
           resourcePlanId: parseInt(req.params.id)
         }))
-      });
+        .filter(wa => wa.weekNumber > 0); // Only create allocations with valid week numbers
+      
+      if (validAllocations.length > 0) {
+        await prisma.weeklyAllocation.createMany({
+          data: validAllocations
+        });
+      }
       
       // Fetch updated resource plan
       const updatedResourcePlan = await prisma.resourcePlan.findUnique({

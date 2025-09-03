@@ -136,7 +136,7 @@ export function ResourcePlan({
             resourcePlanId: plan.id,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
-          });
+          } as WeeklyAllocation);
         } else if (index < afterWeekPosition) {
           const oldWeekNum = weekNumbers[index];
           const existingAllocation = plan.weeklyAllocations.find(wa => wa.weekNumber === oldWeekNum);
@@ -515,13 +515,13 @@ export function ResourcePlan({
           // If allocation for this week does not exist (e.g., plan was missing this week), add it
           const now = new Date().toISOString();
           const newAllocation = {
-            id: 0,
+            id: 0, // Temporary ID, will be replaced by database
             weekNumber: weekNum,
             allocation: clampedValue,
             resourcePlanId: plan.id,
             createdAt: now,
             updatedAt: now,
-          } as any;
+          } as WeeklyAllocation;
 
           return { ...plan, weeklyAllocations: [...plan.weeklyAllocations, newAllocation] };
         });
@@ -576,7 +576,7 @@ export function ResourcePlan({
           resourcePlanId: plan.id,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
-        }
+        } as WeeklyAllocation
       ]
     }));
     onResourcePlansChange(updatedResourcePlans);
@@ -590,8 +590,12 @@ export function ResourcePlan({
       intHourlyRate: 0,
       clientHourlyRate: 0,
       weeklyAllocations: weekNumbers.map(weekNum => ({
+        id: 0, // Temporary ID, will be replaced by database
         weekNumber: weekNum,
-        allocation: 0
+        allocation: 0,
+        resourcePlanId: 0, // Will be set by the backend
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       }))
     };
     
