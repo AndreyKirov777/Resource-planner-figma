@@ -308,74 +308,86 @@ export function ResourcePlan({
           return true;
         }
       },
+      // Internal column group
       {
-        headerName: 'Int hourly rate, $/h',
-        field: 'intHourlyRate',
-        width: 140,
-        editable: true,
-        valueFormatter: (params: any) => `$${params.value.toFixed(2)}`,
-        valueSetter: (params: any) => {
-          const newValue = parseFloat(params.newValue) || 0;
-          
-          // Update the cell data immediately for instant visual feedback
-          params.data.intHourlyRate = newValue;
-          
-          // Update the resource plan
-          const updatedResourcePlans = resourcePlans.map(plan =>
-            plan.id === params.data.id
-              ? { ...plan, intHourlyRate: newValue }
-              : plan
-          );
-          onResourcePlansChange(updatedResourcePlans);
-          
-          return true;
-        }
-      },
-      {
-        headerName: 'Int daily rate, $',
-        width: 120,
-        valueGetter: (params: any) => params.data.intHourlyRate * 8,
-        valueFormatter: (params: any) => `$${params.value.toFixed(2)}`
-      },
-      {
-        headerName: `Hourly rate (Client Rate)`,
-        field: 'clientHourlyRate',
-        width: 160,
-        editable: true,
-        valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`,
-        valueSetter: (params: any) => {
-          const newValue = parseFloat(params.newValue) || 0;
-          
-          // Update the cell data immediately for instant visual feedback
-          params.data.clientHourlyRate = newValue;
-          
-          // Update the resource plan
-          const updatedResourcePlans = resourcePlans.map(plan =>
-            plan.id === params.data.id
-              ? { ...plan, clientHourlyRate: newValue }
-              : plan
-          );
-          onResourcePlansChange(updatedResourcePlans);
-          
-          return true;
-        }
-      },
-      {
-        headerName: `Daily rate (Client Rate)`,
-        width: 150,
-        valueGetter: (params: any) => params.data.clientHourlyRate * 8,
-        valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`
-      },
-      {
-        headerName: 'Margin, per role',
-        width: 130,
-        valueGetter: (params: any) => calculateMargin(params.data),
-        valueFormatter: (params: any) => {
-          if (params.value === null || params.value === undefined) {
-            return '-';
+        headerName: 'Internal',
+        children: [
+          {
+            headerName: 'Int hourly rate, $/h',
+            field: 'intHourlyRate',
+            width: 140,
+            editable: true,
+            valueFormatter: (params: any) => `$${params.value.toFixed(2)}`,
+            valueSetter: (params: any) => {
+              const newValue = parseFloat(params.newValue) || 0;
+              
+              // Update the cell data immediately for instant visual feedback
+              params.data.intHourlyRate = newValue;
+              
+              // Update the resource plan
+              const updatedResourcePlans = resourcePlans.map(plan =>
+                plan.id === params.data.id
+                  ? { ...plan, intHourlyRate: newValue }
+                  : plan
+              );
+              onResourcePlansChange(updatedResourcePlans);
+              
+              return true;
+            }
+          },
+          {
+            headerName: 'Int daily rate, $',
+            width: 120,
+            valueGetter: (params: any) => params.data.intHourlyRate * 8,
+            valueFormatter: (params: any) => `$${params.value.toFixed(2)}`
           }
-          return `${params.value.toFixed(1)}%`;
-        }
+        ]
+      },
+      // Client column group
+      {
+        headerName: 'Client',
+        children: [
+          {
+            headerName: `Hourly rate (Client Rate)`,
+            field: 'clientHourlyRate',
+            width: 160,
+            editable: true,
+            valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`,
+            valueSetter: (params: any) => {
+              const newValue = parseFloat(params.newValue) || 0;
+              
+              // Update the cell data immediately for instant visual feedback
+              params.data.clientHourlyRate = newValue;
+              
+              // Update the resource plan
+              const updatedResourcePlans = resourcePlans.map(plan =>
+                plan.id === params.data.id
+                  ? { ...plan, clientHourlyRate: newValue }
+                  : plan
+              );
+              onResourcePlansChange(updatedResourcePlans);
+              
+              return true;
+            }
+          },
+          {
+            headerName: `Daily rate (Client Rate)`,
+            width: 150,
+            valueGetter: (params: any) => params.data.clientHourlyRate * 8,
+            valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`
+          },
+          {
+            headerName: 'Margin, per role',
+            width: 130,
+            valueGetter: (params: any) => calculateMargin(params.data),
+            valueFormatter: (params: any) => {
+              if (params.value === null || params.value === undefined) {
+                return '-';
+              }
+              return `${params.value.toFixed(1)}%`;
+            }
+          }
+        ]
       }
     ];
 
@@ -645,6 +657,9 @@ export function ResourcePlan({
               filter: false,
               resizable: true
             }}
+            groupHeaderHeight={40}
+            headerHeight={35}
+            suppressColumnGroupHeaders={false}
           />
         </div>
         
