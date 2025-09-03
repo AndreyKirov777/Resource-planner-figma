@@ -393,16 +393,16 @@ export function ResourcePlan({
               style="
                 position: absolute;
                 left: -12px;
-                background: #10b981; 
+                background: #6b7280; 
                 color: white; 
                 border: none; 
                 border-radius: 50%; 
-                width: 14px; 
-                height: 14px; 
+                width: 16px; 
+                height: 16px; 
                 display: flex; 
                 align-items: center; 
                 justify-content: center; 
-                font-size: 10px; 
+                font-size: 12px; 
                 cursor: pointer; 
                 z-index: 10;
                 line-height: 1;
@@ -414,35 +414,35 @@ export function ResourcePlan({
               ${weekNumbers.length > 1 ? `<button 
                 onclick="removeWeek(${weekNum})" 
                 style="
-                  background: #ef4444; 
+                  background: #6b7280; 
                   color: white; 
                   border: none; 
-                  border-radius: 2px; 
+                  border-radius: 50%; 
                   width: 16px; 
                   height: 16px; 
                   display: flex; 
                   align-items: center; 
                   justify-content: center; 
-                  font-size: 10px; 
+                  font-size: 12px; 
                   cursor: pointer;
                 "
-              >×</button>` : ''}
+              >−</button>` : ''}
             </div>
             ${index === weekNumbers.length - 1 ? `<button 
               onclick="insertWeekAfter(${index + 1})" 
               style="
                 position: absolute;
                 right: -12px;
-                background: #10b981; 
+                background: #6b7280; 
                 color: white; 
                 border: none; 
                 border-radius: 50%; 
-                width: 14px; 
-                height: 14px; 
+                width: 16px; 
+                height: 16px; 
                 display: flex; 
                 align-items: center; 
                 justify-content: center; 
-                font-size: 10px; 
+                font-size: 12px; 
                 cursor: pointer; 
                 z-index: 10;
                 line-height: 1;
@@ -630,7 +630,7 @@ export function ResourcePlan({
         </div>
         
         <div className="mb-2 text-sm text-muted-foreground">
-          💡 Tips: Click the green <span className="inline-flex items-center justify-center w-4 h-4 bg-emerald-500 text-white rounded-full text-xs">+</span> buttons to insert weeks at specific positions, or the red × buttons to remove weeks or roles. 
+          💡 Tips: Click the gray <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-500 text-white rounded-full text-xs">+</span> buttons to insert weeks at specific positions, or the gray <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-500 text-white rounded-full text-xs">−</span> buttons to remove weeks or roles. 
           <br />
           <span className="text-amber-600 font-medium">⚠️ Important:</span> When selecting a role, choose from the dropdown to auto-populate name and rate. If you type a custom role, ensure it exists in the Resource List tab first.
         </div>
