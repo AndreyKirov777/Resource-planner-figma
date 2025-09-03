@@ -491,29 +491,44 @@ export function ResourcePlan({
         `
       },
       valueFormatter: (params: any) => `${params.value || 0}%`,
-             valueSetter: (params: any) => {
-         const value = parseInt(params.newValue) || 0;
-         const clampedValue = Math.max(0, Math.min(100, value));
-         
-         // Update the cell data immediately for instant visual feedback
-         params.data[`week${weekNum}`] = clampedValue;
-         
-         // Update the weekly allocation in the database
-         const updatedResourcePlans = resourcePlans.map(plan => {
-           if (plan.id === params.data.id) {
-             const updatedAllocations = plan.weeklyAllocations.map(wa =>
-               wa.weekNumber === weekNum
-                 ? { ...wa, allocation: clampedValue }
-                 : wa
-             );
-             return { ...plan, weeklyAllocations: updatedAllocations };
-           }
-           return plan;
-         });
-         onResourcePlansChange(updatedResourcePlans);
-         
-         return true;
-       }
+      valueSetter: (params: any) => {
+        const value = parseInt(params.newValue) || 0;
+        const clampedValue = Math.max(0, Math.min(100, value));
+
+        // Update the cell data immediately for instant visual feedback
+        params.data[`week${weekNum}`] = clampedValue;
+
+        // Persist into resourcePlans; create allocation if missing
+        const updatedResourcePlans = resourcePlans.map(plan => {
+          if (plan.id !== params.data.id) return plan;
+
+          const existing = plan.weeklyAllocations.find(wa => wa.weekNumber === weekNum);
+          if (existing) {
+            const updatedAllocations = plan.weeklyAllocations.map(wa =>
+              wa.weekNumber === weekNum
+                ? { ...wa, allocation: clampedValue, updatedAt: new Date().toISOString() }
+                : wa
+            );
+            return { ...plan, weeklyAllocations: updatedAllocations };
+          }
+
+          // If allocation for this week does not exist (e.g., plan was missing this week), add it
+          const now = new Date().toISOString();
+          const newAllocation = {
+            id: 0,
+            weekNumber: weekNum,
+            allocation: clampedValue,
+            resourcePlanId: plan.id,
+            createdAt: now,
+            updatedAt: now,
+          } as any;
+
+          return { ...plan, weeklyAllocations: [...plan.weeklyAllocations, newAllocation] };
+        });
+
+        onResourcePlansChange(updatedResourcePlans);
+        return true;
+      }
     }));
 
     const calculationColumns = [
