@@ -7,12 +7,16 @@ import { ResourcePlan } from './components/ResourcePlan';
 import { ResourceList } from './components/ResourceList';
 import { RateCard } from './components/RateCard';
 import { api, Project, ResourceList as ResourceListType, RateCard as RateCardType, ResourcePlan as ResourcePlanType } from './services/api';
+import { Input } from './components/ui/input';
+import { Textarea } from './components/ui/textarea';
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 export default function App() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [editableProjectName, setEditableProjectName] = useState<string>('');
+  const [editableProjectDescription, setEditableProjectDescription] = useState<string>('');
   const [resourceLists, setResourceLists] = useState<ResourceListType[]>([]);
   const [rateCards, setRateCards] = useState<RateCardType[]>([]);
   const [resourcePlans, setResourcePlans] = useState<ResourcePlanType[]>([]);
@@ -52,6 +56,8 @@ export default function App() {
       }
       
       setCurrentProject(project);
+      setEditableProjectName(project.name || '');
+      setEditableProjectDescription(project.description || '');
       
       // Load all related data
       const [resourceListsData, rateCardsData, resourcePlansData] = await Promise.all([
@@ -265,6 +271,12 @@ export default function App() {
     try {
       const updatedProject = await api.updateProject(currentProject.id, settings);
       setCurrentProject(updatedProject);
+      if (typeof settings.name !== 'undefined') {
+        setEditableProjectName(updatedProject.name || '');
+      }
+      if (typeof settings.description !== 'undefined') {
+        setEditableProjectDescription(updatedProject.description || '');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update project settings');
       console.error('Error updating project settings:', err);
@@ -348,10 +360,34 @@ export default function App() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <p className="text-muted-foreground">Project: {currentProject.name}</p>
-        {currentProject.description && (
-          <p className="text-muted-foreground">{currentProject.description}</p>
-        )}
+        <div className="flex flex-col gap-2 max-w-2xl">
+          <label className="text-sm text-muted-foreground">Project name</label>
+          <Input
+            value={editableProjectName}
+            onChange={(e) => setEditableProjectName(e.target.value)}
+            onBlur={() => {
+              if (editableProjectName !== currentProject.name) {
+                handleProjectSettingsChange({ name: editableProjectName });
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+          />
+          <label className="text-sm text-muted-foreground">Project description</label>
+          <Textarea
+            value={editableProjectDescription}
+            onChange={(e) => setEditableProjectDescription(e.target.value)}
+            onBlur={() => {
+              if ((editableProjectDescription || '') !== (currentProject.description || '')) {
+                handleProjectSettingsChange({ description: editableProjectDescription });
+              }
+            }}
+            rows={3}
+          />
+        </div>
         <div className="mt-4 flex gap-2">
           <button onClick={handleExportProject} className="px-3 py-1 bg-blue-600 text-white rounded-sm">
             Export Project (JSON)
