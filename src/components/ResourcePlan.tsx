@@ -630,8 +630,8 @@ export function ResourcePlan({
         <CardHeader>
           <CardTitle>Project Settings</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-4 gap-4">
-          <div className="space-y-2">
+        <CardContent className="flex flex-row gap-4 items-end">
+          <div className="flex-1 space-y-2">
             <Label htmlFor="daysInFTE">Days in FTE/month</Label>
             <Input
               id="daysInFTE"
@@ -641,7 +641,7 @@ export function ResourcePlan({
             />
           </div>
           
-          <div className="space-y-2">
+          <div className="flex-1 space-y-2">
             <Label htmlFor="clientCurrency">Client currency</Label>
             <Select
               value={project.clientCurrency}
@@ -658,7 +658,7 @@ export function ResourcePlan({
             </Select>
           </div>
           
-          <div className="space-y-2">
+          <div className="flex-1 space-y-2">
             <Label htmlFor="exchangeRate">Exchange rate (to USD)</Label>
             <Input
               id="exchangeRate"
@@ -669,8 +669,23 @@ export function ResourcePlan({
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="projectMargin">Project Margin</Label>
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="defaultMargin">Default Margin</Label>
+            <Input
+              id="defaultMargin"
+              type="text"
+              value={`${Number.isFinite(project.defaultMargin as number) ? (project.defaultMargin as number).toFixed(0) : '50'}%`}
+              onChange={(e) => {
+                const numeric = e.target.value.replace(/[^0-9.]/g, '');
+                const parsed = parseFloat(numeric);
+                const clamped = isNaN(parsed) ? 0 : Math.max(0, Math.min(100, parsed));
+                onProjectSettingsChange({ defaultMargin: clamped });
+              }}
+            />
+          </div>
+          
+          <div className="flex-1 space-y-2">
+            <Label htmlFor="projectMargin">Estimated Margin</Label>
             <Input
               id="projectMargin"
               value={`${totals.calculatedMargin.toFixed(0)}%`}

@@ -8,6 +8,7 @@ export interface Project {
   daysInFTE: number;
   clientCurrency: string;
   exchangeRate: number;
+  defaultMargin?: number;
   createdAt: string;
   updatedAt: string;
 }

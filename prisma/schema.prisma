@@ -18,6 +18,7 @@ model Project {
   daysInFTE       Int             @default(20)
   clientCurrency  String          @default("EUR")
   exchangeRate    Float           @default(0.89)
+  defaultMargin   Float?          @default(25.0)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   

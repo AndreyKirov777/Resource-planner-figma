@@ -19,7 +19,8 @@ async function initializeDefaultProject() {
         description: 'Default project for resource planning',
         daysInFTE: 20,
         clientCurrency: 'EUR',
-        exchangeRate: 0.89
+        exchangeRate: 0.89,
+        defaultMargin: 25.0
       }
     });
   }
@@ -133,6 +134,7 @@ app.post('/api/projects/import', async (req, res) => {
         daysInFTE: projectData.daysInFTE ?? 20,
         clientCurrency: projectData.clientCurrency ?? 'EUR',
         exchangeRate: projectData.exchangeRate ?? 0.89,
+        defaultMargin: projectData.defaultMargin ?? 25.0,
       }
     });
 
