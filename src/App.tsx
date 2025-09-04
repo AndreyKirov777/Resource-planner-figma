@@ -363,6 +363,7 @@ export default function App() {
         <div className="flex flex-col gap-2 max-w-2xl">
           <label className="text-sm text-muted-foreground">Project name</label>
           <Input
+            className="w-64 sm:w-72 md:w-80"
             value={editableProjectName}
             onChange={(e) => setEditableProjectName(e.target.value)}
             onBlur={() => {
