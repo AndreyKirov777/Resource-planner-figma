@@ -630,7 +630,7 @@ export function ResourcePlan({
     const totalIntCost = rowData.reduce((sum, row) => sum + calculateTotalIntCost(row), 0);
     const totalPrice = rowData.reduce((sum, row) => sum + calculateTotalPrice(row), 0);
     const totalEfforts = rowData.reduce((sum, row) => sum + calculateEstimatedEfforts(row), 0);
-    const calculatedMargin = totalPrice > 0 ? ((totalPrice - (totalIntCost / project.exchangeRate)) / totalPrice) * 100 : 0;
+    const calculatedMargin = totalPrice > 0 ? ((totalPrice - (totalIntCost * project.exchangeRate)) / totalPrice) * 100 : 0;
     
     return { totalIntCost, totalPrice, totalEfforts, calculatedMargin };
   }, [rowData, weekNumbers, project.exchangeRate]);
