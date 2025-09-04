@@ -476,7 +476,7 @@ export default function App() {
       });
 
       // Format currency columns
-      const currencyColumns = [4, 5, 6, 7, 10, 11]; // Internal costs, client rates, totals
+      const currencyColumns = [4, 5, 6, 7, 9 + weekNumbers.length, 10 + weekNumbers.length]; // Internal costs, client rates, totals
       currencyColumns.forEach(colIndex => {
         worksheet.getColumn(colIndex).numFmt = '$#,##0';
       });
