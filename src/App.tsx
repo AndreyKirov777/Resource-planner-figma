@@ -478,17 +478,17 @@ export default function App() {
       // Format currency columns
       const currencyColumns = [4, 5, 6, 7, 10, 11]; // Internal costs, client rates, totals
       currencyColumns.forEach(colIndex => {
-        worksheet.getColumn(colIndex).numFmt = '$#,##0.00';
+        worksheet.getColumn(colIndex).numFmt = '$#,##0';
       });
 
       // Format percentage columns
       const percentageColumns = [8, ...weekNumbers.map((_, index) => 9 + index)]; // Margin and week columns
       percentageColumns.forEach(colIndex => {
-        worksheet.getColumn(colIndex).numFmt = '0.0"%"';
+        worksheet.getColumn(colIndex).numFmt = '0"%"';
       });
 
       // Format efforts column
-      worksheet.getColumn(12).numFmt = '0.0';
+      worksheet.getColumn(12).numFmt = '0';
 
       // Generate Excel file
       const buffer = await workbook.xlsx.writeBuffer();
