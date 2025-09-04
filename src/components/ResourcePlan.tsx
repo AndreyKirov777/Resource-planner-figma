@@ -111,7 +111,7 @@ export function ResourcePlan({
 
   const calculateMargin = (row: any): number | null => {
     const clientRate = row.clientHourlyRate;
-    const intRateInClientCurrency = row.intHourlyRate / project.exchangeRate;
+    const intRateInClientCurrency = row.intHourlyRate * project.exchangeRate;
     
     // Return null if client rate is zero or invalid (can't calculate margin)
     if (!clientRate || clientRate <= 0 || !isFinite(clientRate)) {
@@ -244,8 +244,18 @@ export function ResourcePlan({
           // Find the selected resource to auto-populate other fields
           const selectedResource = resourceLists.find(r => r.role === newValue);
           if (selectedResource) {
+            // Calculate client hourly rate using default margin
+            // Formula: Client hourly rate = hourly cost / (1 - Default Margin) * Exchange Rate
+            const defaultMargin = project.defaultMargin || 25.0; // Default to 25% if not set
+            const marginDecimal = defaultMargin / 100;
+            const clientHourlyRateInUSD = selectedResource.intRate / (1 - marginDecimal);
+            
+            // Apply exchange rate to convert from USD to client currency
+            const clientHourlyRate = clientHourlyRateInUSD * project.exchangeRate;
+            
             // Auto-populate fields from the selected resource
             params.data.intHourlyRate = selectedResource.intRate;
+            params.data.clientHourlyRate = clientHourlyRate;
             params.data.name = selectedResource.name || '';
             params.data.clientRole = selectedResource.clientRole || '';  // Auto-populate client role
             
@@ -256,6 +266,7 @@ export function ResourcePlan({
                     ...plan, 
                     role: newValue,
                     intHourlyRate: selectedResource.intRate,
+                    clientHourlyRate: clientHourlyRate,
                     name: selectedResource.name || '',
                     clientRole: selectedResource.clientRole || ''  // Update client role
                   }
@@ -724,7 +735,7 @@ export function ResourcePlan({
         <div className="mb-2 text-sm text-muted-foreground">
           💡 Tips: Click the gray <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-500 text-white rounded-full text-xs">+</span> buttons to insert weeks at specific positions, or the gray <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-500 text-white rounded-full text-xs">−</span> buttons to remove weeks or roles. 
           <br />
-          <span className="text-amber-600 font-medium">⚠️ Important:</span> When selecting a role, choose from the dropdown to auto-populate name and rate. If you type a custom role, ensure it exists in the Resource List tab first.
+          <span className="text-green-600 font-medium">✨ Auto-calculation:</span> When selecting a role from the dropdown, the client hourly rate is automatically calculated using the Default Margin and Exchange Rate. If you type a custom role, ensure it exists in the Resource List tab first.
         </div>
         
         <div className="ag-theme-alpine" style={{ height: '600px', width: '100%' }}>
