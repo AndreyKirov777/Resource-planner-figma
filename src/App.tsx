@@ -348,7 +348,6 @@ export default function App() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1>Resource Planning Application</h1>
         <p className="text-muted-foreground">Project: {currentProject.name}</p>
         {currentProject.description && (
           <p className="text-muted-foreground">{currentProject.description}</p>
