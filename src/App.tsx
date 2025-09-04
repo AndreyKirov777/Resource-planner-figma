@@ -9,6 +9,7 @@ import { RateCard } from './components/RateCard';
 import { api, Project, ResourceList as ResourceListType, RateCard as RateCardType, ResourcePlan as ResourcePlanType } from './services/api';
 import { Input } from './components/ui/input';
 import { Textarea } from './components/ui/textarea';
+import { Button } from './components/ui/button';
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -362,21 +363,31 @@ export default function App() {
       <div className="mb-6">
         <div className="flex flex-col gap-2 max-w-2xl">
           <label className="text-sm text-muted-foreground">Project name</label>
-          <Input
-            className="w-64 sm:w-72 md:w-80"
-            value={editableProjectName}
-            onChange={(e) => setEditableProjectName(e.target.value)}
-            onBlur={() => {
-              if (editableProjectName !== currentProject.name) {
-                handleProjectSettingsChange({ name: editableProjectName });
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                (e.target as HTMLInputElement).blur();
-              }
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <Input
+              className="w-64 sm:w-72 md:w-80"
+              value={editableProjectName}
+              onChange={(e) => setEditableProjectName(e.target.value)}
+              onBlur={() => {
+                if (editableProjectName !== currentProject.name) {
+                  handleProjectSettingsChange({ name: editableProjectName });
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+            />
+            <div className="flex gap-2">
+              <Button onClick={handleExportProject} size="sm" variant="default">
+                Export JSON
+              </Button>
+              <Button onClick={handleImportProject} size="sm" variant="secondary">
+                Import JSON
+              </Button>
+            </div>
+          </div>
           <label className="text-sm text-muted-foreground">Project description</label>
           <Textarea
             value={editableProjectDescription}
@@ -388,14 +399,6 @@ export default function App() {
             }}
             rows={3}
           />
-        </div>
-        <div className="mt-4 flex gap-2">
-          <button onClick={handleExportProject} className="px-3 py-1 bg-blue-600 text-white rounded-sm">
-            Export Project (JSON)
-          </button>
-          <button onClick={handleImportProject} className="px-3 py-1 bg-gray-700 text-white rounded-sm">
-            Import Project (JSON)
-          </button>
         </div>
       </div>
 
@@ -415,8 +418,6 @@ export default function App() {
             onAddResourcePlan={handleAddResourcePlan}
             onDeleteResourcePlan={handleDeleteResourcePlan}
             onProjectSettingsChange={handleProjectSettingsChange}
-            onExportProject={handleExportProject}
-            onImportProject={handleImportProject}
           />
         </TabsContent>
         
