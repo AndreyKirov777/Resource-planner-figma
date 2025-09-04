@@ -346,9 +346,9 @@ export function ResourcePlan({
           {
             headerName: 'Hourly cost',
             field: 'intHourlyRate',
-            width: 120,
+            width: 110,
             editable: true,
-            valueFormatter: (params: any) => `$${params.value.toFixed(2)}`,
+            valueFormatter: (params: any) => `$${Math.round(params.value)}`,
             valueSetter: (params: any) => {
               const newValue = parseFloat(params.newValue) || 0;
               
@@ -368,9 +368,9 @@ export function ResourcePlan({
           },
           {
             headerName: 'Daily cost',
-            width: 120,
+            width: 100,
             valueGetter: (params: any) => params.data.intHourlyRate * 8,
-            valueFormatter: (params: any) => `$${params.value.toFixed(2)}`
+            valueFormatter: (params: any) => `$${Math.round(params.value)}`
           }
         ]
       },
@@ -381,9 +381,9 @@ export function ResourcePlan({
           {
             headerName: `Hourly rate`,
             field: 'clientHourlyRate',
-            width: 120,
+            width: 110,
             editable: true,
-            valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`,
+            valueFormatter: (params: any) => `${currencySymbol}${Math.round(params.value)}`,
             valueSetter: (params: any) => {
               const newValue = parseFloat(params.newValue) || 0;
               
@@ -403,9 +403,9 @@ export function ResourcePlan({
           },
           {
             headerName: `Daily rate`,
-            width: 120,
+            width: 100,
             valueGetter: (params: any) => params.data.clientHourlyRate * 8,
-            valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`
+            valueFormatter: (params: any) => `${currencySymbol}${Math.round(params.value)}`
           },
           {
             headerName: 'Margin',
@@ -544,19 +544,19 @@ export function ResourcePlan({
         headerName: 'Total int cost',
         width: 130,
         valueGetter: (params: any) => calculateTotalIntCost(params.data),
-        valueFormatter: (params: any) => `$${params.value.toFixed(2)}`
+        valueFormatter: (params: any) => `$${Math.round(params.value)}`
       },
       {
         headerName: 'Total price',
         width: 120,
         valueGetter: (params: any) => calculateTotalPrice(params.data),
-        valueFormatter: (params: any) => `${currencySymbol}${params.value.toFixed(2)}`
+        valueFormatter: (params: any) => `${currencySymbol}${Math.round(params.value)}`
       },
       {
         headerName: 'Efforts, h',
-        width: 120,
+        width: 100,
         valueGetter: (params: any) => calculateEstimatedEfforts(params.data),
-        valueFormatter: (params: any) => `${params.value.toFixed(1)}`
+        valueFormatter: (params: any) => `${Math.round(params.value)}`
       }
     ];
 
@@ -733,15 +733,15 @@ export function ResourcePlan({
             <div className="grid grid-cols-4 gap-4">
               <div>
                 <Label>Total Internal Cost</Label>
-                <div className="text-lg">${totals.totalIntCost.toFixed(2)}</div>
+                <div className="text-lg">${Math.round(totals.totalIntCost)}</div>
               </div>
               <div>
                 <Label>Total Price</Label>
-                <div className="text-lg">{currencySymbol}{totals.totalPrice.toFixed(2)}</div>
+                <div className="text-lg">{currencySymbol}{Math.round(totals.totalPrice)}</div>
               </div>
               <div>
                 <Label>Total Estimated Efforts</Label>
-                <div className="text-lg">{totals.totalEfforts.toFixed(1)}h</div>
+                <div className="text-lg">{Math.round(totals.totalEfforts)}h</div>
               </div>
               <div>
                 <Label>Calculated Project Margin</Label>
