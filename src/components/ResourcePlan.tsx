@@ -66,7 +66,8 @@ export function ResourcePlan({
     setWeekNumbers(sortedWeekNumbers.length > 0 ? sortedWeekNumbers : [1, 2, 3, 4, 5, 6, 7, 8]);
   }, [resourcePlans]);
 
-  const currencySymbol = project.clientCurrency === 'EUR' ? '€' : '$';
+  const currencySymbol = project.clientCurrency === 'EUR' ? '€' : 
+                        project.clientCurrency === 'GBP' ? '£' : '$';
 
   // Convert resource plans to row data format for AG Grid
   const rowData = useMemo(() => {
@@ -652,12 +653,13 @@ export function ResourcePlan({
               <SelectContent>
                 <SelectItem value="EUR">EUR</SelectItem>
                 <SelectItem value="USD">USD</SelectItem>
+                <SelectItem value="GBP">GBP</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="exchangeRate">USD-EUR Exchange rate</Label>
+            <Label htmlFor="exchangeRate">Exchange rate (to USD)</Label>
             <Input
               id="exchangeRate"
               type="number"
