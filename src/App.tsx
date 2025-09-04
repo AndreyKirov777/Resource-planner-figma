@@ -481,14 +481,17 @@ export default function App() {
         worksheet.getColumn(colIndex).numFmt = '$#,##0';
       });
 
-      // Format percentage columns
-      const percentageColumns = [8, ...weekNumbers.map((_, index) => 9 + index)]; // Margin and week columns
+      // Format percentage columns - Margin and all week columns
+      const marginColumn = 8;
+      const weekColumns = weekNumbers.map((_, index) => 9 + index);
+      const percentageColumns = [marginColumn, ...weekColumns];
+      
       percentageColumns.forEach(colIndex => {
         worksheet.getColumn(colIndex).numFmt = '0"%"';
       });
-
+      
       // Format efforts column
-      worksheet.getColumn(12).numFmt = '0';
+      worksheet.getColumn(9 + weekNumbers.length + 2).numFmt = '0';
 
       // Generate Excel file
       const buffer = await workbook.xlsx.writeBuffer();
