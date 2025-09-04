@@ -81,6 +81,131 @@ app.put('/api/projects/:id', async (req, res) => {
   }
 });
 
+// Project export endpoint
+app.get('/api/projects/:id/export', async (req, res) => {
+  try {
+    const projectId = parseInt(req.params.id);
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        rateCards: true,
+        resourceLists: true,
+        resourcePlans: {
+          include: { weeklyAllocations: true }
+        }
+      }
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // Wrap to allow future schema versioning
+    const payload = {
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      data: project
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.json(payload);
+  } catch (error) {
+    console.error('Error exporting project:', error);
+    res.status(500).json({ error: 'Failed to export project' });
+  }
+});
+
+// Project import endpoint
+app.post('/api/projects/import', async (req, res) => {
+  try {
+    const body = req.body;
+    const projectData = body?.data || body; // support raw or wrapped JSON
+
+    if (!projectData || !projectData.name) {
+      return res.status(400).json({ error: 'Invalid import payload' });
+    }
+
+    // Create the project first
+    const createdProject = await prisma.project.create({
+      data: {
+        name: projectData.name + ' (Imported)',
+        description: projectData.description || null,
+        daysInFTE: projectData.daysInFTE ?? 20,
+        clientCurrency: projectData.clientCurrency ?? 'EUR',
+        exchangeRate: projectData.exchangeRate ?? 0.89,
+      }
+    });
+
+    const newProjectId = createdProject.id;
+
+    // Import rate cards (bulk if present)
+    const rateCards = Array.isArray(projectData.rateCards) ? projectData.rateCards : [];
+    if (rateCards.length > 0) {
+      await prisma.rateCard.createMany({
+        data: rateCards.map((r: any) => ({
+          role: r.role || '',
+          namingInPM: r.namingInPM || r.role || '',
+          discipline: r.discipline || 'General',
+          description: r.description || '',
+          ukraine: parseFloat(r.ukraine) || 0,
+          easternEurope: parseFloat(r.easternEurope) || 0,
+          asiaGE: parseFloat(r.asiaGE) || 0,
+          asiaARMKZ: parseFloat(r.asiaARMKZ) || 0,
+          latam: parseFloat(r.latam) || 0,
+          mexico: parseFloat(r.mexico) || 0,
+          india: parseFloat(r.india) || 0,
+          newYork: parseFloat(r.newYork) || 0,
+          london: parseFloat(r.london) || 0,
+          projectId: newProjectId,
+        }) )
+      });
+    }
+
+    // Import resource lists (bulk if present)
+    const resourceLists = Array.isArray(projectData.resourceLists) ? projectData.resourceLists : [];
+    if (resourceLists.length > 0) {
+      await prisma.resourceList.createMany({
+        data: resourceLists.map((rl: any) => ({
+          role: rl.role || '',
+          clientRole: rl.clientRole || null,
+          name: rl.name || null,
+          intRate: parseFloat(rl.intRate) || 0,
+          location: rl.location || null,
+          description: rl.description || null,
+          projectId: newProjectId,
+        }))
+      });
+    }
+
+    // Import resource plans with nested allocations
+    const resourcePlans = Array.isArray(projectData.resourcePlans) ? projectData.resourcePlans : [];
+    for (const rp of resourcePlans) {
+      const weekly = Array.isArray(rp.weeklyAllocations) ? rp.weeklyAllocations : [];
+      await prisma.resourcePlan.create({
+        data: {
+          role: rp.role || '',
+          clientRole: rp.clientRole || null,
+          name: rp.name || null,
+          intHourlyRate: parseFloat(rp.intHourlyRate) || 0,
+          clientHourlyRate: parseFloat(rp.clientHourlyRate) || 0,
+          projectId: newProjectId,
+          weeklyAllocations: {
+            create: weekly.map((wa: any) => ({
+              weekNumber: parseInt(wa.weekNumber) || 0,
+              allocation: parseInt(wa.allocation) || 0,
+            })).filter((wa: any) => wa.weekNumber > 0)
+          }
+        }
+      });
+    }
+
+    res.json({ message: 'Import completed', projectId: newProjectId });
+  } catch (error) {
+    console.error('Error importing project:', error);
+    res.status(500).json({ error: 'Failed to import project' });
+  }
+});
+
 // Rate Card endpoints
 app.get('/api/projects/:projectId/rate-cards', async (req, res) => {
   try {

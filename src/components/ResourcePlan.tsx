@@ -16,6 +16,8 @@ interface ResourcePlanProps {
   onAddResourcePlan: (resourcePlan: Partial<ResourcePlanType>) => void;
   onDeleteResourcePlan: (id: number) => void;
   onProjectSettingsChange: (settings: Partial<Project>) => void;
+  onExportProject?: () => void;
+  onImportProject?: () => void;
 }
 
 // Custom cell renderer component for the Actions column
@@ -46,7 +48,9 @@ export function ResourcePlan({
   onResourcePlansChange, 
   onAddResourcePlan,
   onDeleteResourcePlan,
-  onProjectSettingsChange 
+  onProjectSettingsChange,
+  onExportProject,
+  onImportProject
 }: ResourcePlanProps) {
   const [weekNumbers, setWeekNumbers] = useState<number[]>([]);
 
@@ -686,6 +690,16 @@ export function ResourcePlan({
               <Plus className="h-4 w-4 mr-1" />
               Add Week at End
             </Button>
+            {onExportProject && (
+              <Button onClick={onExportProject} size="sm" variant="secondary">
+                Export JSON
+              </Button>
+            )}
+            {onImportProject && (
+              <Button onClick={onImportProject} size="sm" variant="secondary">
+                Import JSON
+              </Button>
+            )}
             <span className="text-sm text-muted-foreground">Weeks: {weekNumbers.length} | Roles: {rowData.length}</span>
           </div>
         </div>

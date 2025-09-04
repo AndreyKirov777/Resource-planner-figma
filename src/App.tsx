@@ -25,12 +25,12 @@ export default function App() {
     loadProjectData();
   }, []);
 
-  const loadProjectData = async () => {
+  const loadProjectData = async (preferredProjectId?: number) => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get the first project (or create default)
+      // Get all projects (or create default)
       const projects = await api.getProjects();
       let project: Project;
       
@@ -43,6 +43,10 @@ export default function App() {
           clientCurrency: 'EUR',
           exchangeRate: 0.89
         });
+      } else if (preferredProjectId) {
+        // Load the preferred project if specified
+        const found = projects.find(p => p.id === preferredProjectId);
+        project = found ? found : projects[0];
       } else {
         project = projects[0];
       }
@@ -267,6 +271,44 @@ export default function App() {
     }
   };
 
+  const handleExportProject = async () => {
+    if (!currentProject) return;
+    try {
+      const payload = await api.exportProject(currentProject.id);
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `project-${currentProject.id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to export project');
+    }
+  };
+
+  const handleImportProject = async () => {
+    try {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,application/json';
+      input.onchange = async (e: any) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const text = await file.text();
+        const json = JSON.parse(text);
+        const result = await api.importProject(json);
+        alert(`Import completed. New project ID: ${result.projectId}`);
+        await loadProjectData(result.projectId);
+      };
+      input.click();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to import project');
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -311,6 +353,14 @@ export default function App() {
         {currentProject.description && (
           <p className="text-muted-foreground">{currentProject.description}</p>
         )}
+        <div className="mt-4 flex gap-2">
+          <button onClick={handleExportProject} className="px-3 py-1 bg-blue-600 text-white rounded-sm">
+            Export Project (JSON)
+          </button>
+          <button onClick={handleImportProject} className="px-3 py-1 bg-gray-700 text-white rounded-sm">
+            Import Project (JSON)
+          </button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -329,6 +379,8 @@ export default function App() {
             onAddResourcePlan={handleAddResourcePlan}
             onDeleteResourcePlan={handleDeleteResourcePlan}
             onProjectSettingsChange={handleProjectSettingsChange}
+            onExportProject={handleExportProject}
+            onImportProject={handleImportProject}
           />
         </TabsContent>
         

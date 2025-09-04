@@ -106,6 +106,22 @@ export const api = {
     return response.json();
   },
 
+  async exportProject(id: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/projects/${id}/export`);
+    if (!response.ok) throw new Error('Failed to export project');
+    return response.json();
+  },
+
+  async importProject(payload: any): Promise<{ message: string; projectId: number }> {
+    const response = await fetch(`${API_BASE_URL}/projects/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error('Failed to import project');
+    return response.json();
+  },
+
   // Rate Card endpoints
   async getRateCards(projectId: number): Promise<RateCard[]> {
     const response = await fetch(`${API_BASE_URL}/projects/${projectId}/rate-cards`);
