@@ -342,6 +342,10 @@ export default function App() {
       });
       const weekNumbers = Array.from(allWeekNumbers).sort((a, b) => a - b);
 
+      // Get currency symbol based on client currency
+      const currencySymbol = currentProject.clientCurrency === 'EUR' ? '€' : 
+                            currentProject.clientCurrency === 'GBP' ? '£' : '$';
+
       // Define headers
       const headers = [
         'Rate Card Role',
@@ -349,12 +353,12 @@ export default function App() {
         'Name',
         'Internal Hourly Cost ($)',
         'Internal Daily Cost ($)',
-        'Client Hourly Rate',
-        'Client Daily Rate',
+        `Client Hourly Rate (${currencySymbol})`,
+        `Client Daily Rate (${currencySymbol})`,
         'Margin (%)',
         ...weekNumbers.map(week => `Week ${week} (%)`),
         'Total Internal Cost ($)',
-        'Total Price',
+        `Total Price (${currencySymbol})`,
         'Estimated Efforts (h)'
       ];
 
@@ -475,10 +479,18 @@ export default function App() {
         }
       });
 
-      // Format currency columns
-      const currencyColumns = [4, 5, 6, 7, 9 + weekNumbers.length, 10 + weekNumbers.length]; // Internal costs, client rates, totals
-      currencyColumns.forEach(colIndex => {
+      // Format currency columns with appropriate currency symbols
+      const internalCostColumns = [4, 5, 9 + weekNumbers.length]; // Internal Hourly Cost, Internal Daily Cost, Total Internal Cost (always USD)
+      internalCostColumns.forEach(colIndex => {
         worksheet.getColumn(colIndex).numFmt = '$#,##0';
+      });
+
+      // Format client currency columns (Client Hourly Rate, Client Daily Rate, Total Price)
+      const clientCurrencyColumns = [6, 7, 10 + weekNumbers.length]; // Client Hourly Rate, Client Daily Rate, Total Price
+      const clientCurrencyFormat = currentProject.clientCurrency === 'EUR' ? '€#,##0' :
+                                  currentProject.clientCurrency === 'GBP' ? '£#,##0' : '$#,##0';
+      clientCurrencyColumns.forEach(colIndex => {
+        worksheet.getColumn(colIndex).numFmt = clientCurrencyFormat;
       });
 
       // Format percentage columns - Margin and all week columns
