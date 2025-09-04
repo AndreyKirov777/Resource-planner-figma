@@ -381,10 +381,10 @@ export default function App() {
             />
             <div className="flex gap-2">
               <Button onClick={handleExportProject} size="sm" variant="default">
-                Export JSON
+                Save file
               </Button>
               <Button onClick={handleImportProject} size="sm" variant="secondary">
-                Import JSON
+                Load file
               </Button>
             </div>
           </div>
