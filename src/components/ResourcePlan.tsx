@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { AgGridReact } from 'ag-grid-react';
+import DataEditor, { GridCellKind, GridColumn, Item, EditableGridCell } from '@glideapps/glide-data-grid';
+import '@glideapps/glide-data-grid/dist/index.css';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -20,25 +21,40 @@ interface ResourcePlanProps {
   onImportProject?: () => void;
 }
 
-// Custom cell renderer component for the Actions column
-const ActionsCellRenderer = (props: any) => {
-  const removeRole = () => {
-    if ((window as any).removePlanRole) {
-      (window as any).removePlanRole(props.data.id);
-    }
-  };
+// Custom cell type for actions
+interface ActionCell {
+  kind: GridCellKind.Custom;
+  data: { id: number; onRemove: () => void };
+  allowOverlay: false;
+  copyData: '';
+}
 
-  return (
-    <div className="flex items-center justify-center h-full">
-      <button
-        onClick={removeRole}
-        className="bg-red-500 hover:bg-red-600 text-white border-none rounded-sm w-5 h-5 flex items-center justify-center text-xs cursor-pointer"
-        title="Remove role"
-      >
-        ×
-      </button>
-    </div>
-  );
+// Custom cell renderer for actions
+const ActionCellRenderer = {
+  isMatch: (cell: any): cell is ActionCell => cell.kind === GridCellKind.Custom && cell.data?.id !== undefined,
+  draw: (args: any, cell: ActionCell) => {
+    const { ctx, rect } = args;
+    const { x, y, width, height } = rect;
+    
+    // Draw remove button
+    const buttonSize = 20;
+    const buttonX = x + (width - buttonSize) / 2;
+    const buttonY = y + (height - buttonSize) / 2;
+    
+    // Button background
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(buttonX, buttonY, buttonSize, buttonSize);
+    
+    // Button text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '14px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('×', buttonX + buttonSize / 2, buttonY + buttonSize / 2);
+    
+    return true;
+  },
+  provideEditor: () => undefined
 };
 
 export function ResourcePlan({ 
@@ -69,51 +85,30 @@ export function ResourcePlan({
   const currencySymbol = project.clientCurrency === 'EUR' ? '€' : 
                         project.clientCurrency === 'GBP' ? '£' : '$';
 
-  // Convert resource plans to row data format for AG Grid
-  const rowData = useMemo(() => {
-    return resourcePlans.map(plan => {
-      const row: any = {
-        id: plan.id,
-        role: plan.role,
-        clientRole: plan.clientRole || '',  // Added client role field
-        name: plan.name || '',
-        intHourlyRate: plan.intHourlyRate,
-        clientHourlyRate: plan.clientHourlyRate
-      };
-
-      // Add week allocations
-      weekNumbers.forEach(weekNum => {
-        const allocation = plan.weeklyAllocations.find(wa => wa.weekNumber === weekNum);
-        row[`week${weekNum}`] = allocation?.allocation || 0;
-      });
-
-      return row;
-    });
-  }, [resourcePlans, weekNumbers]);
-
-  const calculateEstimatedEfforts = (row: any): number => {
+  // Calculation functions (reused from original)
+  const calculateEstimatedEfforts = (plan: ResourcePlanType): number => {
     let totalWeeks = 0;
     weekNumbers.forEach(weekNum => {
-      totalWeeks += (row[`week${weekNum}`] || 0) / 100;
+      const allocation = plan.weeklyAllocations.find(wa => wa.weekNumber === weekNum);
+      totalWeeks += (allocation?.allocation || 0) / 100;
     });
     return totalWeeks * 40; // 40 hours per week
   };
 
-  const calculateTotalIntCost = (row: any): number => {
-    const hours = calculateEstimatedEfforts(row);
-    return hours * row.intHourlyRate;
+  const calculateTotalIntCost = (plan: ResourcePlanType): number => {
+    const hours = calculateEstimatedEfforts(plan);
+    return hours * plan.intHourlyRate;
   };
 
-  const calculateTotalPrice = (row: any): number => {
-    const hours = calculateEstimatedEfforts(row);
-    return hours * row.clientHourlyRate;
+  const calculateTotalPrice = (plan: ResourcePlanType): number => {
+    const hours = calculateEstimatedEfforts(plan);
+    return hours * plan.clientHourlyRate;
   };
 
-  const calculateMargin = (row: any): number | null => {
-    const clientRate = row.clientHourlyRate;
-    const intRateInClientCurrency = row.intHourlyRate * project.exchangeRate;
+  const calculateMargin = (plan: ResourcePlanType): number | null => {
+    const clientRate = plan.clientHourlyRate;
+    const intRateInClientCurrency = plan.intHourlyRate * project.exchangeRate;
     
-    // Return null if client rate is zero or invalid (can't calculate margin)
     if (!clientRate || clientRate <= 0 || !isFinite(clientRate)) {
       return null;
     }
@@ -121,21 +116,20 @@ export function ResourcePlan({
     return ((clientRate - intRateInClientCurrency) / clientRate) * 100;
   };
 
+  // Week management functions (reused from original)
   const insertWeekAfter = useCallback((afterWeekPosition: number) => {
     const newWeekNumbers = [...weekNumbers];
     newWeekNumbers.splice(afterWeekPosition, 0, 0);
     
     const renumberedWeeks = newWeekNumbers.map((_, index) => index + 1);
     
-    // Update all resource plans with new week structure
     const updatedResourcePlans = resourcePlans.map(plan => {
       const newWeeklyAllocations: WeeklyAllocation[] = [];
       
       renumberedWeeks.forEach((newWeekNum, index) => {
         if (index === afterWeekPosition) {
-          // New week with 0 allocation - create a temporary allocation
           newWeeklyAllocations.push({
-            id: 0, // Temporary ID, will be replaced by database
+            id: 0,
             weekNumber: newWeekNum,
             allocation: 0,
             resourcePlanId: plan.id,
@@ -182,7 +176,6 @@ export function ResourcePlan({
     const newWeekNumbers = weekNumbers.filter(week => week !== weekToRemove);
     const renumberedWeeks = newWeekNumbers.map((_, index) => index + 1);
     
-    // Update all resource plans with new week structure
     const updatedResourcePlans = resourcePlans.map(plan => {
       const newWeeklyAllocations: WeeklyAllocation[] = [];
       
@@ -212,384 +205,366 @@ export function ResourcePlan({
     onDeleteResourcePlan(roleId);
   }, [onDeleteResourcePlan]);
 
-  const columnDefs = useMemo(() => {
-    // Actions column - moved to first position
-    const actionsColumn = {
-      headerName: '',
-      width: 60,
-      pinned: 'left',
-      cellRenderer: ActionsCellRenderer,
-      sortable: false,
-      filter: false
-    };
-
-    const baseColumns = [
-      {
-        headerName: 'Rate card role',
-        field: 'role',
-        width: 200,
-        pinned: 'left',
-        editable: true,
-        cellEditor: 'agSelectCellEditor',
-        cellEditorParams: {
-          values: resourceLists.map(r => r.role)
-        },
-        valueGetter: (params: any) => params.data.role,
-        valueSetter: (params: any) => {
-          const newValue = params.newValue;
-          
-          // Update the cell data immediately for instant visual feedback
-          params.data.role = newValue;
-          
-          // Find the selected resource to auto-populate other fields
-          const selectedResource = resourceLists.find(r => r.role === newValue);
-          if (selectedResource) {
-            // Calculate client hourly rate using default margin
-            // Formula: Client hourly rate = hourly cost / (1 - Default Margin) * Exchange Rate
-            const defaultMargin = project.defaultMargin || 25.0; // Default to 25% if not set
-            const marginDecimal = defaultMargin / 100;
-            const clientHourlyRateInUSD = selectedResource.intRate / (1 - marginDecimal);
-            
-            // Apply exchange rate to convert from USD to client currency
-            const clientHourlyRate = clientHourlyRateInUSD * project.exchangeRate;
-            
-            // Auto-populate fields from the selected resource
-            params.data.intHourlyRate = selectedResource.intRate;
-            params.data.clientHourlyRate = clientHourlyRate;
-            params.data.name = selectedResource.name || '';
-            params.data.clientRole = selectedResource.clientRole || '';  // Auto-populate client role
-            
-            // Update the resource plan with all the new data
-            const updatedResourcePlans = resourcePlans.map(plan =>
-              plan.id === params.data.id
-                ? { 
-                    ...plan, 
-                    role: newValue,
-                    intHourlyRate: selectedResource.intRate,
-                    clientHourlyRate: clientHourlyRate,
-                    name: selectedResource.name || '',
-                    clientRole: selectedResource.clientRole || ''  // Update client role
-                  }
-                : plan
-            );
-            onResourcePlansChange(updatedResourcePlans);
-          } else {
-            // If role doesn't exist in resourceLists, show a warning but still allow the update
-            console.warn(`Role "${newValue}" not found in resource list. This may cause issues.`);
-            
-            // Update the resource plan with just the role field
-            const updatedResourcePlans = resourcePlans.map(plan =>
-              plan.id === params.data.id
-                ? { ...plan, role: newValue }
-                : plan
-            );
-            onResourcePlansChange(updatedResourcePlans);
-          }
-          
-          return true; // Return true to indicate the value was set successfully
-        },
-        cellRenderer: (params: any) => {
-          const role = params.value;
-          const isValidRole = validateRole(role);
-          
-          return (
-            <div className={`flex items-center gap-2 ${!isValidRole && role ? 'text-amber-600' : ''}`}>
-              <span>{role || 'Select role...'}</span>
-              {!isValidRole && role && (
-                <span title="This role is not in the Resource List" className="text-xs bg-amber-100 text-amber-800 px-1 rounded">
-                  ⚠️
-                </span>
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        headerName: 'Client Role',
-        field: 'clientRole',
-        width: 150,
-        pinned: 'left',
-        editable: true,
-        valueSetter: (params: any) => {
-          const newValue = params.newValue;
-          
-          // Update the cell data immediately for instant visual feedback
-          params.data.clientRole = newValue;
-          
-          // Update the resource plan
-          const updatedResourcePlans = resourcePlans.map(plan =>
-            plan.id === params.data.id
-              ? { ...plan, clientRole: newValue }
-              : plan
-          );
-          onResourcePlansChange(updatedResourcePlans);
-          
-          return true;
-        }
-      },
-      {
-        headerName: 'Name',
-        field: 'name',
-        width: 150,
-        pinned: 'left',
-        editable: true,
-        valueSetter: (params: any) => {
-          const newValue = params.newValue;
-          
-          // Update the cell data immediately for instant visual feedback
-          params.data.name = newValue;
-          
-          // Update the resource plan
-          const updatedResourcePlans = resourcePlans.map(plan =>
-            plan.id === params.data.id
-              ? { ...plan, name: newValue }
-              : plan
-          );
-          onResourcePlansChange(updatedResourcePlans);
-          
-          return true;
-        }
-      },
-      // Internal column group
-      {
-        headerName: 'Internal',
-        children: [
-          {
-            headerName: 'Hourly cost',
-            field: 'intHourlyRate',
-            width: 110,
-            editable: true,
-            valueFormatter: (params: any) => `$${Math.round(params.value)}`,
-            valueSetter: (params: any) => {
-              const newValue = parseFloat(params.newValue) || 0;
-              
-              // Update the cell data immediately for instant visual feedback
-              params.data.intHourlyRate = newValue;
-              
-              // Update the resource plan
-              const updatedResourcePlans = resourcePlans.map(plan =>
-                plan.id === params.data.id
-                  ? { ...plan, intHourlyRate: newValue }
-                  : plan
-              );
-              onResourcePlansChange(updatedResourcePlans);
-              
-              return true;
-            }
-          },
-          {
-            headerName: 'Daily cost',
-            width: 100,
-            valueGetter: (params: any) => params.data.intHourlyRate * 8,
-            valueFormatter: (params: any) => `$${Math.round(params.value)}`
-          }
-        ]
-      },
-      // Client column group
-      {
-        headerName: 'Client',
-        children: [
-          {
-            headerName: `Hourly rate`,
-            field: 'clientHourlyRate',
-            width: 110,
-            editable: true,
-            valueFormatter: (params: any) => `${currencySymbol}${Math.round(params.value)}`,
-            valueSetter: (params: any) => {
-              const newValue = parseFloat(params.newValue) || 0;
-              
-              // Update the cell data immediately for instant visual feedback
-              params.data.clientHourlyRate = newValue;
-              
-              // Update the resource plan
-              const updatedResourcePlans = resourcePlans.map(plan =>
-                plan.id === params.data.id
-                  ? { ...plan, clientHourlyRate: newValue }
-                  : plan
-              );
-              onResourcePlansChange(updatedResourcePlans);
-              
-              return true;
-            }
-          },
-          {
-            headerName: `Daily rate`,
-            width: 100,
-            valueGetter: (params: any) => params.data.clientHourlyRate * 8,
-            valueFormatter: (params: any) => `${currencySymbol}${Math.round(params.value)}`
-          },
-          {
-            headerName: 'Margin',
-            width: 100,
-            valueGetter: (params: any) => calculateMargin(params.data),
-            valueFormatter: (params: any) => {
-              if (params.value === null || params.value === undefined) {
-                return '-';
-              }
-              return `${params.value.toFixed(1)}%`;
-            }
-          }
-        ]
-      }
+  // Glide Data Grid column definitions
+  const columns = useMemo((): GridColumn[] => {
+    const cols: GridColumn[] = [
+      { title: '', width: 60 }, // Actions column
+      { title: 'Rate card role', width: 200 },
+      { title: 'Client Role', width: 150 },
+      { title: 'Name', width: 150 },
+      { title: 'Hourly cost', width: 110 },
+      { title: 'Daily cost', width: 100 },
+      { title: 'Hourly rate', width: 110 },
+      { title: 'Daily rate', width: 100 },
+      { title: 'Margin', width: 100 },
     ];
 
-    const weekColumns = [{
-      headerName: 'Weeks',
-      children: weekNumbers.map((weekNum, index) => ({
-        headerName: `${weekNum}`,
-        field: `week${weekNum}`,
-        width: 80,
-        editable: true,
-        filter: false,
-        headerComponentParams: {
-          template: `
-            <div style="display: flex; align-items: center; justify-content: center; width: 100%; position: relative;">
-              <button 
-                onclick="insertWeekAfter(${index})" 
-                style="
-                  position: absolute;
-                  left: -12px;
-                  background: #6b7280; 
-                  color: white; 
-                  border: none; 
-                  border-radius: 50%; 
-                  width: 16px; 
-                  height: 16px; 
-                  display: flex; 
-                  align-items: center; 
-                  justify-content: center; 
-                  font-size: 12px; 
-                  cursor: pointer; 
-                  z-index: 10;
-                  line-height: 1;
-                "
-                title="Insert week after position ${index}"
-              >+</button>
-              <div style="display: flex; align-items: center; gap: 4px;">
-                <span>${weekNum}</span>
-                ${weekNumbers.length > 1 ? `<button 
-                  onclick="removeWeek(${weekNum})" 
-                  style="
-                    background: #6b7280; 
-                    color: white; 
-                    border: none; 
-                    border-radius: 50%; 
-                    width: 16px; 
-                    height: 16px; 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center; 
-                    font-size: 12px; 
-                    cursor: pointer;
-                  "
-                >−</button>` : ''}
-              </div>
-              ${index === weekNumbers.length - 1 ? `<button 
-                onclick="insertWeekAfter(${index + 1})" 
-                style="
-                  position: absolute;
-                  right: -12px;
-                  background: #6b7280; 
-                  color: white; 
-                  border: none; 
-                  border-radius: 50%; 
-                  width: 16px; 
-                  height: 16px; 
-                  display: flex; 
-                  align-items: center; 
-                  justify-content: center; 
-                  font-size: 12px; 
-                  cursor: pointer; 
-                  z-index: 10;
-                  line-height: 1;
-                "
-                title="Add week at end"
-              >+</button>` : ''}
-            </div>
-          `
-        },
-        valueFormatter: (params: any) => `${params.value || 0}%`,
-        valueSetter: (params: any) => {
-          const value = parseInt(params.newValue) || 0;
-          const clampedValue = Math.max(0, Math.min(100, value));
+    // Add week columns
+    weekNumbers.forEach(weekNum => {
+      cols.push({ title: `Week ${weekNum}`, width: 80 });
+    });
 
-          // Update the cell data immediately for instant visual feedback
-          params.data[`week${weekNum}`] = clampedValue;
+    // Add calculation columns
+    cols.push(
+      { title: 'Total int cost', width: 130 },
+      { title: 'Total price', width: 120 },
+      { title: 'Efforts, h', width: 100 }
+    );
 
-          // Persist into resourcePlans; create allocation if missing
-          const updatedResourcePlans = resourcePlans.map(plan => {
-            if (plan.id !== params.data.id) return plan;
+    return cols;
+  }, [weekNumbers]);
 
-            const existing = plan.weeklyAllocations.find(wa => wa.weekNumber === weekNum);
+  // Get cell content function for glide-data-grid
+  const getCellContent = useCallback(([col, row]: Item) => {
+    const plan = resourcePlans[row];
+    if (!plan) {
+      return {
+        kind: GridCellKind.Text,
+        data: '',
+        allowOverlay: false,
+        displayData: '',
+      };
+    }
+
+    const colIndex = col;
+    let colOffset = 0;
+
+    // Actions column
+    if (colIndex === colOffset) {
+      return {
+        kind: GridCellKind.Custom,
+        data: { id: plan.id, onRemove: () => removeRole(plan.id) },
+        allowOverlay: false,
+        copyData: '',
+      } as ActionCell;
+    }
+    colOffset++;
+
+    // Rate card role
+    if (colIndex === colOffset) {
+      const isValidRole = resourceLists.some(r => r.role === plan.role);
+      return {
+        kind: GridCellKind.Text,
+        data: plan.role || '',
+        allowOverlay: true,
+        displayData: plan.role || 'Select role...',
+        readonly: false,
+      };
+    }
+    colOffset++;
+
+    // Client Role
+    if (colIndex === colOffset) {
+      return {
+        kind: GridCellKind.Text,
+        data: plan.clientRole || '',
+        allowOverlay: true,
+        displayData: plan.clientRole || '',
+        readonly: false,
+      };
+    }
+    colOffset++;
+
+    // Name
+    if (colIndex === colOffset) {
+      return {
+        kind: GridCellKind.Text,
+        data: plan.name || '',
+        allowOverlay: true,
+        displayData: plan.name || '',
+        readonly: false,
+      };
+    }
+    colOffset++;
+
+    // Hourly cost
+    if (colIndex === colOffset) {
+      return {
+        kind: GridCellKind.Number,
+        data: plan.intHourlyRate,
+        allowOverlay: true,
+        displayData: `$${Math.round(plan.intHourlyRate)}`,
+        readonly: false,
+      };
+    }
+    colOffset++;
+
+    // Daily cost
+    if (colIndex === colOffset) {
+      return {
+        kind: GridCellKind.Text,
+        data: `$${Math.round(plan.intHourlyRate * 8)}`,
+        allowOverlay: false,
+        displayData: `$${Math.round(plan.intHourlyRate * 8)}`,
+      };
+    }
+    colOffset++;
+
+    // Hourly rate
+    if (colIndex === colOffset) {
+      return {
+        kind: GridCellKind.Number,
+        data: plan.clientHourlyRate,
+        allowOverlay: true,
+        displayData: `${currencySymbol}${Math.round(plan.clientHourlyRate)}`,
+        readonly: false,
+      };
+    }
+    colOffset++;
+
+    // Daily rate
+    if (colIndex === colOffset) {
+      return {
+        kind: GridCellKind.Text,
+        data: `${currencySymbol}${Math.round(plan.clientHourlyRate * 8)}`,
+        allowOverlay: false,
+        displayData: `${currencySymbol}${Math.round(plan.clientHourlyRate * 8)}`,
+      };
+    }
+    colOffset++;
+
+    // Margin
+    if (colIndex === colOffset) {
+      const margin = calculateMargin(plan);
+      return {
+        kind: GridCellKind.Text,
+        data: margin === null ? '-' : `${margin.toFixed(1)}%`,
+        allowOverlay: false,
+        displayData: margin === null ? '-' : `${margin.toFixed(1)}%`,
+      };
+    }
+    colOffset++;
+
+    // Week columns
+    for (let i = 0; i < weekNumbers.length; i++) {
+      if (colIndex === colOffset + i) {
+        const weekNum = weekNumbers[i];
+        const allocation = plan.weeklyAllocations.find(wa => wa.weekNumber === weekNum);
+        const value = allocation?.allocation || 0;
+        return {
+          kind: GridCellKind.Number,
+          data: value,
+          allowOverlay: true,
+          displayData: `${value}%`,
+          readonly: false,
+        };
+      }
+    }
+    colOffset += weekNumbers.length;
+
+    // Total int cost
+    if (colIndex === colOffset) {
+      return {
+        kind: GridCellKind.Text,
+        data: `$${Math.round(calculateTotalIntCost(plan))}`,
+        allowOverlay: false,
+        displayData: `$${Math.round(calculateTotalIntCost(plan))}`,
+      };
+    }
+    colOffset++;
+
+    // Total price
+    if (colIndex === colOffset) {
+      return {
+        kind: GridCellKind.Text,
+        data: `${currencySymbol}${Math.round(calculateTotalPrice(plan))}`,
+        allowOverlay: false,
+        displayData: `${currencySymbol}${Math.round(calculateTotalPrice(plan))}`,
+      };
+    }
+    colOffset++;
+
+    // Efforts
+    if (colIndex === colOffset) {
+      return {
+        kind: GridCellKind.Text,
+        data: `${Math.round(calculateEstimatedEfforts(plan))}`,
+        allowOverlay: false,
+        displayData: `${Math.round(calculateEstimatedEfforts(plan))}`,
+      };
+    }
+
+    return {
+      kind: GridCellKind.Text,
+      data: '',
+      allowOverlay: false,
+      displayData: '',
+    };
+  }, [resourcePlans, weekNumbers, currencySymbol, resourceLists, removeRole, project.exchangeRate]);
+
+  // Handle cell editing
+  const onCellEdited = useCallback((cell: Item, newValue: EditableGridCell) => {
+    const [col, row] = cell;
+    const plan = resourcePlans[row];
+    if (!plan) return;
+
+    const colIndex = col;
+    let colOffset = 0;
+
+    // Skip actions column
+    colOffset++;
+
+    // Rate card role
+    if (colIndex === colOffset) {
+      if (newValue.kind === GridCellKind.Text) {
+        const newRole = newValue.data;
+        const selectedResource = resourceLists.find(r => r.role === newRole);
+        
+        if (selectedResource) {
+          const defaultMargin = project.defaultMargin || 25.0;
+          const marginDecimal = defaultMargin / 100;
+          const clientHourlyRateInUSD = selectedResource.intRate / (1 - marginDecimal);
+          const clientHourlyRate = clientHourlyRateInUSD * project.exchangeRate;
+          
+          const updatedResourcePlans = resourcePlans.map(p =>
+            p.id === plan.id
+              ? { 
+                  ...p, 
+                  role: newRole,
+                  intHourlyRate: selectedResource.intRate,
+                  clientHourlyRate: clientHourlyRate,
+                  name: selectedResource.name || '',
+                  clientRole: selectedResource.clientRole || ''
+                }
+              : p
+          );
+          onResourcePlansChange(updatedResourcePlans);
+        } else {
+          const updatedResourcePlans = resourcePlans.map(p =>
+            p.id === plan.id ? { ...p, role: newRole } : p
+          );
+          onResourcePlansChange(updatedResourcePlans);
+        }
+      }
+      return;
+    }
+    colOffset++;
+
+    // Client Role
+    if (colIndex === colOffset) {
+      if (newValue.kind === GridCellKind.Text) {
+        const updatedResourcePlans = resourcePlans.map(p =>
+          p.id === plan.id ? { ...p, clientRole: newValue.data } : p
+        );
+        onResourcePlansChange(updatedResourcePlans);
+      }
+      return;
+    }
+    colOffset++;
+
+    // Name
+    if (colIndex === colOffset) {
+      if (newValue.kind === GridCellKind.Text) {
+        const updatedResourcePlans = resourcePlans.map(p =>
+          p.id === plan.id ? { ...p, name: newValue.data } : p
+        );
+        onResourcePlansChange(updatedResourcePlans);
+      }
+      return;
+    }
+    colOffset++;
+
+    // Hourly cost
+    if (colIndex === colOffset) {
+      if (newValue.kind === GridCellKind.Number) {
+        const updatedResourcePlans = resourcePlans.map(p =>
+          p.id === plan.id ? { ...p, intHourlyRate: newValue.data || 0 } : p
+        );
+        onResourcePlansChange(updatedResourcePlans);
+      }
+      return;
+    }
+    colOffset++;
+
+    // Skip daily cost (calculated)
+    colOffset++;
+
+    // Hourly rate
+    if (colIndex === colOffset) {
+      if (newValue.kind === GridCellKind.Number) {
+        const updatedResourcePlans = resourcePlans.map(p =>
+          p.id === plan.id ? { ...p, clientHourlyRate: newValue.data || 0 } : p
+        );
+        onResourcePlansChange(updatedResourcePlans);
+      }
+      return;
+    }
+    colOffset++;
+
+    // Skip daily rate and margin (calculated)
+    colOffset += 2;
+
+    // Week columns
+    for (let i = 0; i < weekNumbers.length; i++) {
+      if (colIndex === colOffset + i) {
+        if (newValue.kind === GridCellKind.Number) {
+          const weekNum = weekNumbers[i];
+          const clampedValue = Math.max(0, Math.min(100, newValue.data || 0));
+          
+          const updatedResourcePlans = resourcePlans.map(p => {
+            if (p.id !== plan.id) return p;
+            
+            const existing = p.weeklyAllocations.find(wa => wa.weekNumber === weekNum);
             if (existing) {
-              const updatedAllocations = plan.weeklyAllocations.map(wa =>
+              const updatedAllocations = p.weeklyAllocations.map(wa =>
                 wa.weekNumber === weekNum
                   ? { ...wa, allocation: clampedValue, updatedAt: new Date().toISOString() }
                   : wa
               );
-              return { ...plan, weeklyAllocations: updatedAllocations };
+              return { ...p, weeklyAllocations: updatedAllocations };
             }
-
-            // If allocation for this week does not exist (e.g., plan was missing this week), add it
+            
             const now = new Date().toISOString();
             const newAllocation = {
-              id: 0, // Temporary ID, will be replaced by database
+              id: 0,
               weekNumber: weekNum,
               allocation: clampedValue,
-              resourcePlanId: plan.id,
+              resourcePlanId: p.id,
               createdAt: now,
               updatedAt: now,
             } as WeeklyAllocation;
-
-            return { ...plan, weeklyAllocations: [...plan.weeklyAllocations, newAllocation] };
+            
+            return { ...p, weeklyAllocations: [...p.weeklyAllocations, newAllocation] };
           });
-
+          
           onResourcePlansChange(updatedResourcePlans);
-          return true;
         }
-      }))
-    }];
-
-    const calculationColumns = [
-      {
-        headerName: 'Total int cost',
-        width: 130,
-        valueGetter: (params: any) => calculateTotalIntCost(params.data),
-        valueFormatter: (params: any) => `$${Math.round(params.value)}`
-      },
-      {
-        headerName: 'Total price',
-        width: 120,
-        valueGetter: (params: any) => calculateTotalPrice(params.data),
-        valueFormatter: (params: any) => `${currencySymbol}${Math.round(params.value)}`
-      },
-      {
-        headerName: 'Efforts, h',
-        width: 100,
-        valueGetter: (params: any) => calculateEstimatedEfforts(params.data),
-        valueFormatter: (params: any) => `${Math.round(params.value)}`
+        return;
       }
-    ];
+    }
+  }, [resourcePlans, weekNumbers, resourceLists, project.defaultMargin, project.exchangeRate, onResourcePlansChange]);
 
-    // Make functions globally available for the header buttons
-    (window as any).removeWeek = removeSpecificWeek;
-    (window as any).insertWeekAfter = insertWeekAfter;
-    (window as any).removePlanRole = removeRole;
-
-    return [actionsColumn, ...baseColumns, ...weekColumns, ...calculationColumns];
-  }, [weekNumbers, currencySymbol, project.exchangeRate, removeSpecificWeek, insertWeekAfter, resourceLists, removeRole, resourcePlans, onResourcePlansChange]);
-
+  // Helper functions (reused from original)
   const addWeek = useCallback(() => {
     const newWeekNumber = Math.max(...weekNumbers) + 1;
     setWeekNumbers(prev => [...prev, newWeekNumber]);
     
-    // Add the new week to all resource plans
     const updatedResourcePlans = resourcePlans.map(plan => ({
       ...plan,
       weeklyAllocations: [
         ...plan.weeklyAllocations,
         {
-          id: 0, // Temporary ID, will be replaced by database
+          id: 0,
           weekNumber: newWeekNumber,
           allocation: 0,
           resourcePlanId: plan.id,
@@ -604,15 +579,15 @@ export function ResourcePlan({
   const addRole = useCallback(() => {
     const newResourcePlan: Partial<ResourcePlanType> = {
       role: '',
-      clientRole: '',  // Added client role field
+      clientRole: '',
       name: '',
       intHourlyRate: 0,
       clientHourlyRate: 0,
       weeklyAllocations: weekNumbers.map(weekNum => ({
-        id: 0, // Temporary ID, will be replaced by database
+        id: 0,
         weekNumber: weekNum,
         allocation: 0,
-        resourcePlanId: 0, // Will be set by the backend
+        resourcePlanId: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }))
@@ -621,19 +596,21 @@ export function ResourcePlan({
     onAddResourcePlan(newResourcePlan);
   }, [weekNumbers, onAddResourcePlan]);
 
-  // Helper function to validate if a role exists in resourceLists
   const validateRole = useCallback((role: string): boolean => {
     return resourceLists.some(r => r.role === role);
   }, [resourceLists]);
 
   const totals = useMemo(() => {
-    const totalIntCost = rowData.reduce((sum, row) => sum + calculateTotalIntCost(row), 0);
-    const totalPrice = rowData.reduce((sum, row) => sum + calculateTotalPrice(row), 0);
-    const totalEfforts = rowData.reduce((sum, row) => sum + calculateEstimatedEfforts(row), 0);
+    const totalIntCost = resourcePlans.reduce((sum, plan) => sum + calculateTotalIntCost(plan), 0);
+    const totalPrice = resourcePlans.reduce((sum, plan) => sum + calculateTotalPrice(plan), 0);
+    const totalEfforts = resourcePlans.reduce((sum, plan) => sum + calculateEstimatedEfforts(plan), 0);
     const calculatedMargin = totalPrice > 0 ? ((totalPrice - (totalIntCost * project.exchangeRate)) / totalPrice) * 100 : 0;
     
     return { totalIntCost, totalPrice, totalEfforts, calculatedMargin };
-  }, [rowData, weekNumbers, project.exchangeRate]);
+  }, [resourcePlans, project.exchangeRate]);
+
+  // Custom cells for actions - simplified implementation
+  const customRenderers = [ActionCellRenderer];
 
   return (
     <div className="space-y-6">
@@ -728,7 +705,7 @@ export function ResourcePlan({
                 Import JSON
               </Button>
             )}
-            <span className="text-sm text-muted-foreground">Weeks: {weekNumbers.length} | Roles: {rowData.length}</span>
+            <span className="text-sm text-muted-foreground">Weeks: {weekNumbers.length} | Roles: {resourcePlans.length}</span>
           </div>
         </div>
         
@@ -738,19 +715,54 @@ export function ResourcePlan({
           <span className="text-green-600 font-medium">✨ Auto-calculation:</span> When selecting a role from the dropdown, the client hourly rate is automatically calculated using the Default Margin and Exchange Rate. If you type a custom role, ensure it exists in the Resource List tab first.
         </div>
         
-        <div className="ag-theme-alpine" style={{ height: '600px', width: '100%' }}>
-          <AgGridReact
-            theme="legacy"
-            rowData={rowData}
-            columnDefs={columnDefs}
-            defaultColDef={{
-              sortable: true,
-              filter: false,
-              resizable: true
+        <div style={{ height: '600px', width: '100%' }}>
+          <DataEditor
+            getCellContent={getCellContent}
+            columns={columns}
+            rows={resourcePlans.length}
+            onCellEdited={onCellEdited}
+            onCellActivated={(cell) => {
+              const [col, row] = cell;
+              if (col === 0) { // Actions column
+                const plan = resourcePlans[row];
+                if (plan) {
+                  removeRole(plan.id);
+                }
+              }
             }}
-            groupHeaderHeight={40}
-            headerHeight={35}
-            suppressColumnGroupHeaders={false}
+            freezeColumns={4}
+            rowMarkers="number"
+            smoothScrollX={true}
+            smoothScrollY={true}
+            overscrollX={0}
+            overscrollY={0}
+            theme={{
+              accentColor: "#8f4f8f",
+              accentFg: "#ffffff",
+              accentLight: "rgba(62, 116, 253, 0.1)",
+              textDark: "#313131",
+              textMedium: "#737373",
+              textLight: "#b1b1b1",
+              textBubble: "#313131",
+              bgIconHeader: "#b1b1b1",
+              fgIconHeader: "#717171",
+              textHeader: "#4a4a4a",
+              textHeaderSelected: "#000000",
+              bgCell: "#ffffff",
+              bgCellMedium: "#fafafa",
+              bgHeader: "#f6f6f6",
+              bgHeaderHasFocus: "#e1e1e1",
+              bgHeaderHovered: "#eeeeee",
+              bgBubble: "#ffffff",
+              bgBubbleSelected: "#ffffff",
+              bgSearchResult: "#fff9e3",
+              borderColor: "rgba(115, 115, 115, 0.16)",
+              drilldownBorder: "rgba(115, 115, 115, 0.2)",
+              linkColor: "#4F46E5",
+              headerFontStyle: "600 14px",
+              baseFontStyle: "14px",
+              fontFamily: "Inter, Roboto, -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Ubuntu, noto, arial, sans-serif"
+            }}
           />
         </div>
         
