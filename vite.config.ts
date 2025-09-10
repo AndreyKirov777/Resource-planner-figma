@@ -5,6 +5,9 @@
 
   export default defineConfig({
     plugins: [react()],
+    optimizeDeps: {
+      include: ['@glideapps/glide-data-grid']
+    },
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {

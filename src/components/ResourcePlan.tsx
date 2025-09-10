@@ -788,12 +788,16 @@ export function ResourcePlan({
           <span className="text-green-600 font-medium">✨ Auto-calculation:</span> When selecting a role from the dropdown, the client hourly rate is automatically calculated using the Default Margin and Exchange Rate. If you type a custom role, ensure it exists in the Resource List tab first.
         </div>
         
-        <div style={{ height: '600px', width: '100%' }}>
+        <div style={{ height: '600px', width: '100%', position: 'relative' }}>
           <DataEditor
             getCellContent={getCellContent}
             columns={columns}
             rows={resourcePlans.length}
             onCellEdited={onCellEdited}
+            overlayCss=""
+            experimental={{
+              enableColumnResizing: true,
+            }}
             onCellActivated={(cell) => {
               const [col, row] = cell;
               if (col === 0) { // Actions column
@@ -801,6 +805,7 @@ export function ResourcePlan({
                 if (plan) {
                   removeRole(plan.id);
                 }
+                return;
               }
               // Rate Card role column (index 1)
               if (col === 1) {
@@ -809,7 +814,10 @@ export function ResourcePlan({
                   setRoleSelection(plan.role || '');
                   setRolePicker({ open: true, row });
                 }
+                return;
               }
+              // For all other columns, allow normal editing behavior
+              return;
             }}
             freezeColumns={4}
             rowMarkers="number"
