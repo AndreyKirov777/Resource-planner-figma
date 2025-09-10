@@ -6,6 +6,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Plus, X } from 'lucide-react';
 import { Project, ResourceList as ResourceListType, ResourcePlan as ResourcePlanType, WeeklyAllocation } from '../services/api';
 
@@ -27,6 +28,15 @@ interface ActionCell {
   data: { id: number; onRemove: () => void };
   allowOverlay: false;
   copyData: '';
+}
+
+// Custom cell type for role selection
+interface RoleCell {
+  kind: GridCellKind.Custom;
+  data: { type: 'role-select'; value: string; options: string[] };
+  allowOverlay: true;
+  copyData: string;
+  readonly?: boolean;
 }
 
 // Custom cell renderer for actions
@@ -57,6 +67,67 @@ const ActionCellRenderer = {
   provideEditor: () => undefined
 };
 
+// Custom cell renderer for role selection with dropdown editor
+const RoleCellRenderer = {
+  isMatch: (cell: any): cell is RoleCell => cell.kind === GridCellKind.Custom && cell.data?.type === 'role-select',
+  draw: (args: any, cell: RoleCell) => {
+    const { ctx, rect, theme } = args;
+    const { x, y, width, height } = rect;
+
+    // background
+    ctx.fillStyle = (args as any).cell?.themeOverride?.bgCell ?? theme.bgCell;
+    ctx.fillRect(x, y, width, height);
+
+    // text
+    ctx.fillStyle = theme.textDark;
+    ctx.font = '14px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    const label = cell.data.value || 'Select role...';
+    ctx.fillText(label, x + 8, y + height / 2);
+
+    return true;
+  },
+  provideEditor: (cell: RoleCell) => {
+    const Editor = (p: any) => {
+      const { onChange, onFinishedEditing, value } = p;
+      const current = (value as RoleCell).data.value;
+      const options = (value as RoleCell).data.options;
+
+      return (
+        <div style={{ padding: 8, minWidth: 220 }}>
+          <Select
+            value={current || ''}
+            onValueChange={(val) => {
+              const updated: RoleCell = {
+                ...(value as RoleCell),
+                data: { ...((value as RoleCell).data), value: val },
+              };
+              onChange(updated);
+              onFinishedEditing(updated);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select role..." />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((opt: string) => (
+                <SelectItem key={opt} value={opt}>
+                  {opt}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    };
+    return {
+      editor: Editor,
+      disablePadding: true,
+    } as any;
+  },
+};
+
 export function ResourcePlan({ 
   project, 
   resourceLists, 
@@ -69,6 +140,8 @@ export function ResourcePlan({
   onImportProject
 }: ResourcePlanProps) {
   const [weekNumbers, setWeekNumbers] = useState<number[]>([]);
+  const [rolePicker, setRolePicker] = useState<{ open: boolean; row: number | null }>({ open: false, row: null });
+  const [roleSelection, setRoleSelection] = useState<string>('');
 
   // Initialize week numbers from existing resource plans
   useEffect(() => {
@@ -729,6 +802,14 @@ export function ResourcePlan({
                   removeRole(plan.id);
                 }
               }
+              // Rate Card role column (index 1)
+              if (col === 1) {
+                const plan = resourcePlans[row];
+                if (plan) {
+                  setRoleSelection(plan.role || '');
+                  setRolePicker({ open: true, row });
+                }
+              }
             }}
             freezeColumns={4}
             rowMarkers="number"
@@ -765,7 +846,69 @@ export function ResourcePlan({
             }}
           />
         </div>
-        
+
+        {/* Role picker dialog */}
+        <Dialog open={rolePicker.open} onOpenChange={(open) => setRolePicker(p => ({ ...p, open }))}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Select Rate Card Role</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={roleSelection} onValueChange={setRoleSelection}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {resourceLists.map((r) => (
+                    <SelectItem key={r.role} value={r.role}>{r.role}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button variant="secondary" onClick={() => setRolePicker({ open: false, row: null })}>Cancel</Button>
+              <Button
+                onClick={() => {
+                  const row = rolePicker.row;
+                  if (row === null) { setRolePicker({ open: false, row: null }); return; }
+                  const plan = resourcePlans[row];
+                  if (!plan) { setRolePicker({ open: false, row: null }); return; }
+                  const newRole = roleSelection;
+                  const selectedResource = resourceLists.find(r => r.role === newRole);
+                  if (selectedResource) {
+                    const defaultMargin = project.defaultMargin || 25.0;
+                    const marginDecimal = defaultMargin / 100;
+                    const clientHourlyRateInUSD = selectedResource.intRate / (1 - marginDecimal);
+                    const clientHourlyRate = clientHourlyRateInUSD * project.exchangeRate;
+                    const updatedResourcePlans = resourcePlans.map(p =>
+                      p.id === plan.id
+                        ? {
+                            ...p,
+                            role: newRole,
+                            intHourlyRate: selectedResource.intRate,
+                            clientHourlyRate: clientHourlyRate,
+                            name: selectedResource.name || '',
+                            clientRole: selectedResource.clientRole || ''
+                          }
+                        : p
+                    );
+                    onResourcePlansChange(updatedResourcePlans);
+                  } else {
+                    const updatedResourcePlans = resourcePlans.map(p =>
+                      p.id === plan.id ? { ...p, role: newRole } : p
+                    );
+                    onResourcePlansChange(updatedResourcePlans);
+                  }
+                  setRolePicker({ open: false, row: null });
+                }}
+              >
+                Apply
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <Card>
           <CardContent className="pt-6">
             <div className="grid grid-cols-4 gap-4">
