@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import DataEditor, { GridCellKind, GridColumn, Item, EditableGridCell } from '@glideapps/glide-data-grid';
+import DataEditor, { GridCellKind, GridColumn, Item, EditableGridCell, HeaderClickedEventArgs } from '@glideapps/glide-data-grid';
 import '@glideapps/glide-data-grid/dist/index.css';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -7,7 +7,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Trash2 } from 'lucide-react';
 import { Project, ResourceList as ResourceListType, ResourcePlan as ResourcePlanType, WeeklyAllocation } from '../services/api';
 
 interface ResourcePlanProps {
@@ -142,6 +142,14 @@ export function ResourcePlan({
   const [weekNumbers, setWeekNumbers] = useState<number[]>([]);
   const [rolePicker, setRolePicker] = useState<{ open: boolean; row: number | null }>({ open: false, row: null });
   const [roleSelection, setRoleSelection] = useState<string>('');
+  const [contextMenu, setContextMenu] = useState<{ 
+    show: boolean; 
+    x: number; 
+    y: number; 
+    weekNumber: number | null; 
+    colIndex: number | null; 
+  }>({ show: false, x: 0, y: 0, weekNumber: null, colIndex: null });
+  const [lastMousePosition, setLastMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Initialize week numbers from existing resource plans
   useEffect(() => {
@@ -673,6 +681,95 @@ export function ResourcePlan({
     return resourceLists.some(r => r.role === role);
   }, [resourceLists]);
 
+  // Handle header context menu (right-click on column headers)
+  const handleHeaderContextMenu = useCallback((colIndex: number, event: HeaderClickedEventArgs) => {
+    // Prevent the default browser context menu
+    if (event.preventDefault) {
+      event.preventDefault();
+    }
+    
+    // Calculate the week column offset - skip the first 9 columns (actions, role, client role, name, hourly cost, daily cost, hourly rate, daily rate, margin)
+    const weekColumnStartIndex = 9;
+    const weekColumnIndex = colIndex - weekColumnStartIndex;
+    
+    // Only show context menu for week columns
+    if (weekColumnIndex >= 0 && weekColumnIndex < weekNumbers.length) {
+      const weekNumber = weekNumbers[weekColumnIndex];
+      
+      // Use the actual mouse position captured by the mouse event listeners
+      let absoluteX = lastMousePosition.x;
+      let absoluteY = lastMousePosition.y;
+      
+      // Ensure context menu doesn't go off-screen
+      const menuWidth = 160;
+      const menuHeight = 80;
+      
+      if (absoluteX + menuWidth > window.innerWidth) {
+        absoluteX = window.innerWidth - menuWidth - 10;
+      }
+      if (absoluteY + menuHeight > window.innerHeight) {
+        absoluteY = window.innerHeight - menuHeight - 10;
+      }
+      
+      // Ensure minimum distance from edges
+      const finalX = Math.max(10, Math.round(absoluteX));
+      const finalY = Math.max(10, Math.round(absoluteY));
+      
+      setContextMenu({
+        show: true,
+        x: finalX,
+        y: finalY,
+        weekNumber,
+        colIndex
+      });
+    }
+  }, [weekNumbers, lastMousePosition]);
+
+  // Close context menu when clicking elsewhere and prevent browser context menu
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setContextMenu(prev => ({ ...prev, show: false }));
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setLastMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      // Check if the right-click is on the DataEditor canvas
+      const target = e.target as HTMLElement;
+      const isOnCanvas = target.tagName === 'CANVAS' || target.closest('[data-testid="data-grid-canvas"]') || target.closest('.dvn-scroller');
+      
+      if (isOnCanvas) {
+        e.preventDefault(); // Prevent browser context menu on the grid
+        // Update mouse position for context menu positioning
+        setLastMousePosition({ x: e.clientX, y: e.clientY });
+      }
+    };
+
+    if (contextMenu.show) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    
+    // Track mouse position and prevent browser context menu on the grid
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('contextmenu', handleContextMenu);
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [contextMenu.show]);
+
+  // Handle delete week from context menu
+  const handleDeleteWeekFromContextMenu = useCallback(() => {
+    if (contextMenu.weekNumber !== null) {
+      removeSpecificWeek(contextMenu.weekNumber);
+    }
+    setContextMenu(prev => ({ ...prev, show: false }));
+  }, [contextMenu.weekNumber, removeSpecificWeek]);
+
   const totals = useMemo(() => {
     const totalIntCost = resourcePlans.reduce((sum, plan) => sum + calculateTotalIntCost(plan), 0);
     const totalPrice = resourcePlans.reduce((sum, plan) => sum + calculateTotalPrice(plan), 0);
@@ -785,6 +882,8 @@ export function ResourcePlan({
         <div className="mb-2 text-sm text-muted-foreground">
           💡 Tips: Click the gray <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-500 text-white rounded-full text-xs">+</span> buttons to insert weeks at specific positions, or the gray <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-500 text-white rounded-full text-xs">−</span> buttons to remove weeks or roles. 
           <br />
+          <span className="text-blue-600 font-medium">🖱️ New:</span> Right-click on any week column header to delete that specific week from the planning table.
+          <br />
           <span className="text-green-600 font-medium">✨ Auto-calculation:</span> When selecting a role from the dropdown, the client hourly rate is automatically calculated using the Default Margin and Exchange Rate. If you type a custom role, ensure it exists in the Resource List tab first.
         </div>
         
@@ -795,6 +894,7 @@ export function ResourcePlan({
             rows={resourcePlans.length}
             customRenderers={customRenderers}
             onCellEdited={onCellEdited}
+            onHeaderContextMenu={handleHeaderContextMenu}
             overlayCss=""
             experimental={{
               enableColumnResizing: true,
@@ -854,6 +954,33 @@ export function ResourcePlan({
               fontFamily: "Inter, Roboto, -apple-system, BlinkMacSystemFont, avenir next, avenir, segoe ui, helvetica neue, helvetica, Ubuntu, noto, arial, sans-serif"
             }}
           />
+          
+          {/* Context Menu for Week Deletion */}
+          {contextMenu.show && (
+            <div
+              className="fixed bg-white border border-gray-200 rounded-md shadow-lg py-1 z-50"
+              style={{
+                left: `${contextMenu.x}px`,
+                top: `${contextMenu.y}px`,
+                minWidth: '160px'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                onClick={handleDeleteWeekFromContextMenu}
+                disabled={weekNumbers.length <= 1}
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Week {contextMenu.weekNumber}
+              </button>
+              {weekNumbers.length <= 1 && (
+                <div className="px-4 py-2 text-xs text-gray-500">
+                  Cannot delete the last week
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Role picker dialog */}
