@@ -294,23 +294,23 @@ export function ResourcePlan({
       { title: 'Rate card role', width: 200 },
       { title: 'Client Role', width: 150 },
       { title: 'Name', width: 150 },
-      { title: 'Hourly cost', width: 110, group: 'Internal' },
-      { title: 'Daily cost', width: 100, group: 'Internal' },
-      { title: 'Hourly rate', width: 110, group: 'Client' },
-      { title: 'Daily rate', width: 100, group: 'Client' },
-      { title: 'Margin', width: 100 },
+      { title: 'Hourly cost', width: 90, group: 'Internal' },
+      { title: 'Daily cost', width: 90, group: 'Internal' },
+      { title: 'Hourly rate', width: 90, group: 'Client' },
+      { title: 'Daily rate', width: 90, group: 'Client' },
+      { title: 'Margin', width: 70 },
     ];
 
     // Add week columns with "Weeks" group header
     weekNumbers.forEach(weekNum => {
-      cols.push({ title: `${weekNum}`, width: 80, group: 'Weeks' });
+      cols.push({ title: `${weekNum}`, width: 50, group: 'Weeks' });
     });
 
     // Add calculation columns with "Total" group header
     cols.push(
-      { title: 'Cost', width: 130, group: 'Total' },
-      { title: 'Price', width: 120, group: 'Total' },
-      { title: 'Efforts, h', width: 100, group: 'Total' }
+      { title: 'Cost', width: 100, group: 'Total' },
+      { title: 'Price', width: 100, group: 'Total' },
+      { title: 'Efforts, h', width: 90, group: 'Total' }
     );
 
     return cols;
@@ -1003,13 +1003,11 @@ export function ResourcePlan({
         </div>
         
         <div className="mb-2 text-sm text-muted-foreground">
-          💡 Tips: Click the gray <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-500 text-white rounded-full text-xs">+</span> buttons to insert weeks at specific positions, or the gray <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-500 text-white rounded-full text-xs">−</span> buttons to remove weeks or roles. 
-          <br />
+         
           <span className="text-blue-600 font-medium">🖱️ New:</span> Right-click on any week column header to insert weeks before/after or delete that specific week from the planning table.
           <br />
           <span className="text-purple-600 font-medium">📋 Fill Handle:</span> Select week cells and use the fill handle (small square in corner) to drag and fill adjacent cells, or use Ctrl+D (fill down) and Ctrl+R (fill right) keyboard shortcuts.
           <br />
-          <span className="text-green-600 font-medium">✨ Auto-calculation:</span> When selecting a role from the dropdown, the client hourly rate is automatically calculated using the Default Margin and Exchange Rate. If you type a custom role, ensure it exists in the Resource List tab first.
         </div>
         
         <div style={{ height: '600px', width: '100%', position: 'relative' }}>
