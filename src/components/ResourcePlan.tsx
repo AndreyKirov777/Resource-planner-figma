@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import DataEditor, { GridCellKind, GridColumn, Item, EditableGridCell, HeaderClickedEventArgs } from '@glideapps/glide-data-grid';
+import DataEditor, { GridCellKind, GridColumn, Item, EditableGridCell, HeaderClickedEventArgs, GridSelection } from '@glideapps/glide-data-grid';
 import '@glideapps/glide-data-grid/dist/index.css';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -150,6 +150,7 @@ export function ResourcePlan({
     colIndex: number | null; 
   }>({ show: false, x: 0, y: 0, weekNumber: null, colIndex: null });
   const [lastMousePosition, setLastMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [gridSelection, setGridSelection] = useState<GridSelection>();
 
   // Initialize week numbers from existing resource plans
   useEffect(() => {
@@ -349,6 +350,7 @@ export function ResourcePlan({
         data: plan.role || '',
         allowOverlay: true,
         displayData: plan.role || 'Select role...',
+        copyData: plan.role || '',
         readonly: false,
       };
     }
@@ -361,6 +363,7 @@ export function ResourcePlan({
         data: plan.clientRole || '',
         allowOverlay: true,
         displayData: plan.clientRole || '',
+        copyData: plan.clientRole || '',
         readonly: false,
       };
     }
@@ -373,6 +376,7 @@ export function ResourcePlan({
         data: plan.name || '',
         allowOverlay: true,
         displayData: plan.name || '',
+        copyData: plan.name || '',
         readonly: false,
       };
     }
@@ -385,6 +389,7 @@ export function ResourcePlan({
         data: plan.intHourlyRate,
         allowOverlay: true,
         displayData: `$${Math.round(plan.intHourlyRate)}`,
+        copyData: plan.intHourlyRate.toString(),
         readonly: false,
       };
     }
@@ -408,6 +413,7 @@ export function ResourcePlan({
         data: plan.clientHourlyRate,
         allowOverlay: true,
         displayData: `${currencySymbol}${Math.round(plan.clientHourlyRate)}`,
+        copyData: plan.clientHourlyRate.toString(),
         readonly: false,
       };
     }
@@ -447,6 +453,7 @@ export function ResourcePlan({
           data: value,
           allowOverlay: true,
           displayData: `${value}%`,
+          copyData: value.toString(),
           readonly: false,
         };
       }
@@ -635,6 +642,74 @@ export function ResourcePlan({
     }
   }, [resourcePlans, weekNumbers, resourceLists, project.defaultMargin, project.exchangeRate, onResourcePlansChange]);
 
+  // Handle batch cell edits (used by fill handle)
+  const onCellsEdited = useCallback((newValues: readonly { location: Item; value: EditableGridCell }[]) => {
+    const weekColumnStartIndex = 9; // Skip the first 9 columns
+    
+    // Group changes by resource plan
+    const planUpdates = new Map<number, { plan: ResourcePlanType; updates: { weekNum: number; value: number }[] }>();
+    
+    newValues.forEach(({ location, value }) => {
+      const [col, row] = location;
+      const plan = resourcePlans[row];
+      if (!plan) return;
+      
+      // Only process week columns
+      if (col >= weekColumnStartIndex && col < weekColumnStartIndex + weekNumbers.length) {
+        const weekColumnIndex = col - weekColumnStartIndex;
+        const weekNum = weekNumbers[weekColumnIndex];
+        
+        if (value.kind === GridCellKind.Number) {
+          const clampedValue = Math.max(0, Math.min(100, value.data || 0));
+          
+          if (!planUpdates.has(plan.id)) {
+            planUpdates.set(plan.id, { plan, updates: [] });
+          }
+          
+          planUpdates.get(plan.id)!.updates.push({ weekNum, value: clampedValue });
+        }
+      }
+    });
+    
+    if (planUpdates.size > 0) {
+      const updatedResourcePlans = resourcePlans.map(plan => {
+        const planUpdate = planUpdates.get(plan.id);
+        if (!planUpdate) return plan;
+        
+        let updatedAllocations = [...plan.weeklyAllocations];
+        
+        planUpdate.updates.forEach(({ weekNum, value }) => {
+          const existingIndex = updatedAllocations.findIndex(wa => wa.weekNumber === weekNum);
+          
+          if (existingIndex >= 0) {
+            updatedAllocations[existingIndex] = {
+              ...updatedAllocations[existingIndex],
+              allocation: value,
+              updatedAt: new Date().toISOString()
+            };
+          } else {
+            const now = new Date().toISOString();
+            updatedAllocations.push({
+              id: 0,
+              weekNumber: weekNum,
+              allocation: value,
+              resourcePlanId: plan.id,
+              createdAt: now,
+              updatedAt: now,
+            } as WeeklyAllocation);
+          }
+        });
+        
+        return { ...plan, weeklyAllocations: updatedAllocations };
+      });
+      
+      onResourcePlansChange(updatedResourcePlans);
+      return true; // Prevent individual onCellEdited calls
+    }
+    
+    return false; // Allow individual onCellEdited calls for non-week columns
+  }, [resourcePlans, weekNumbers, onResourcePlansChange]);
+
   // Helper functions (reused from original)
   const addWeek = useCallback(() => {
     const newWeekNumber = Math.max(...weekNumbers) + 1;
@@ -808,6 +883,28 @@ export function ResourcePlan({
   // Custom cells for actions - simplified implementation
   const customRenderers = [ActionCellRenderer];
 
+
+  // Handle grid selection changes
+  const onGridSelectionChange = useCallback((newSelection: GridSelection | undefined) => {
+    setGridSelection(newSelection);
+  }, []);
+
+  // Provide cells for selection (needed for fill handle and copy operations)
+  const getCellsForSelection = useCallback((selection: { x: number; y: number; width: number; height: number }) => {
+    const cells: any[][] = [];
+    
+    for (let row = selection.y; row < selection.y + selection.height; row++) {
+      const rowCells: any[] = [];
+      for (let col = selection.x; col < selection.x + selection.width; col++) {
+        const cellContent = getCellContent([col, row]);
+        rowCells.push(cellContent);
+      }
+      cells.push(rowCells);
+    }
+    
+    return cells;
+  }, [getCellContent]);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -910,6 +1007,8 @@ export function ResourcePlan({
           <br />
           <span className="text-blue-600 font-medium">🖱️ New:</span> Right-click on any week column header to insert weeks before/after or delete that specific week from the planning table.
           <br />
+          <span className="text-purple-600 font-medium">📋 Fill Handle:</span> Select week cells and use the fill handle (small square in corner) to drag and fill adjacent cells, or use Ctrl+D (fill down) and Ctrl+R (fill right) keyboard shortcuts.
+          <br />
           <span className="text-green-600 font-medium">✨ Auto-calculation:</span> When selecting a role from the dropdown, the client hourly rate is automatically calculated using the Default Margin and Exchange Rate. If you type a custom role, ensure it exists in the Resource List tab first.
         </div>
         
@@ -920,8 +1019,29 @@ export function ResourcePlan({
             rows={resourcePlans.length}
             customRenderers={customRenderers}
             onCellEdited={onCellEdited}
+            onCellsEdited={onCellsEdited}
             onHeaderContextMenu={handleHeaderContextMenu}
             overlayCss=""
+            fillHandle={true}
+            gridSelection={gridSelection}
+            onGridSelectionChange={onGridSelectionChange}
+            getCellsForSelection={getCellsForSelection}
+            rangeSelect="rect"
+            keybindings={{
+              selectAll: true,
+              selectRow: true,
+              selectColumn: true,
+              downFill: true,
+              rightFill: true,
+              pageUp: false,
+              pageDown: false,
+              clear: true,
+              copy: true,
+              paste: true,
+              search: false,
+              first: true,
+              last: true,
+            }}
             experimental={{
               enableColumnResizing: true,
             }}
