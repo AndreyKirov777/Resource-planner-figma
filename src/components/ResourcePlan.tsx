@@ -776,7 +776,8 @@ export function ResourcePlan({
       // Find the position of the current week and insert before it
       const weekPosition = weekNumbers.findIndex(week => week === contextMenu.weekNumber);
       if (weekPosition >= 0) {
-        insertWeekAfter(weekPosition - 1);
+        // insertWeekAfter actually inserts AT the position, so to insert BEFORE we use the current position
+        insertWeekAfter(weekPosition);
       }
     }
     setContextMenu(prev => ({ ...prev, show: false }));
@@ -788,7 +789,8 @@ export function ResourcePlan({
       // Find the position of the current week and insert after it
       const weekPosition = weekNumbers.findIndex(week => week === contextMenu.weekNumber);
       if (weekPosition >= 0) {
-        insertWeekAfter(weekPosition);
+        // insertWeekAfter actually inserts AT the position, so to insert AFTER we use position + 1
+        insertWeekAfter(weekPosition + 1);
       }
     }
     setContextMenu(prev => ({ ...prev, show: false }));
