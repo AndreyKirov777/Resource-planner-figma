@@ -294,10 +294,10 @@ export function ResourcePlan({
       { title: 'Rate card role', width: 200 },
       { title: 'Client Role', width: 150 },
       { title: 'Name', width: 150 },
-      { title: 'Hourly cost', width: 110 },
-      { title: 'Daily cost', width: 100 },
-      { title: 'Hourly rate', width: 110 },
-      { title: 'Daily rate', width: 100 },
+      { title: 'Hourly cost', width: 110, group: 'Internal' },
+      { title: 'Daily cost', width: 100, group: 'Internal' },
+      { title: 'Hourly rate', width: 110, group: 'Client' },
+      { title: 'Daily rate', width: 100, group: 'Client' },
       { title: 'Margin', width: 100 },
     ];
 
@@ -306,11 +306,11 @@ export function ResourcePlan({
       cols.push({ title: `${weekNum}`, width: 80, group: 'Weeks' });
     });
 
-    // Add calculation columns
+    // Add calculation columns with "Total" group header
     cols.push(
-      { title: 'Total int cost', width: 130 },
-      { title: 'Total price', width: 120 },
-      { title: 'Efforts, h', width: 100 }
+      { title: 'Total int cost', width: 130, group: 'Total' },
+      { title: 'Total price', width: 120, group: 'Total' },
+      { title: 'Efforts, h', width: 100, group: 'Total' }
     );
 
     return cols;
