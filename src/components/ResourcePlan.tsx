@@ -308,8 +308,8 @@ export function ResourcePlan({
 
     // Add calculation columns with "Total" group header
     cols.push(
-      { title: 'Total int cost', width: 130, group: 'Total' },
-      { title: 'Total price', width: 120, group: 'Total' },
+      { title: 'Cost', width: 130, group: 'Total' },
+      { title: 'Price', width: 120, group: 'Total' },
       { title: 'Efforts, h', width: 100, group: 'Total' }
     );
 
