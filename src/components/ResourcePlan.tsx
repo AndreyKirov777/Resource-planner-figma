@@ -962,7 +962,9 @@ export function ResourcePlan({
               style={{
                 left: `${contextMenu.x}px`,
                 top: `${contextMenu.y}px`,
-                minWidth: '160px'
+                minWidth: '160px',
+                backgroundColor: '#ffffff',
+                opacity: 1
               }}
               onClick={(e) => e.stopPropagation()}
             >
