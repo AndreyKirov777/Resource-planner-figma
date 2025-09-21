@@ -7,7 +7,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
-import { Plus, X, Trash2 } from 'lucide-react';
+import { Plus, X, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Project, ResourceList as ResourceListType, ResourcePlan as ResourcePlanType, WeeklyAllocation } from '../services/api';
 
 interface ResourcePlanProps {
@@ -702,7 +702,7 @@ export function ResourcePlan({
       
       // Ensure context menu doesn't go off-screen
       const menuWidth = 160;
-      const menuHeight = 80;
+      const menuHeight = 140; // Increased for 3 menu items plus separator
       
       if (absoluteX + menuWidth > window.innerWidth) {
         absoluteX = window.innerWidth - menuWidth - 10;
@@ -769,6 +769,30 @@ export function ResourcePlan({
     }
     setContextMenu(prev => ({ ...prev, show: false }));
   }, [contextMenu.weekNumber, removeSpecificWeek]);
+
+  // Handle insert week before from context menu
+  const handleInsertWeekBefore = useCallback(() => {
+    if (contextMenu.weekNumber !== null) {
+      // Find the position of the current week and insert before it
+      const weekPosition = weekNumbers.findIndex(week => week === contextMenu.weekNumber);
+      if (weekPosition >= 0) {
+        insertWeekAfter(weekPosition - 1);
+      }
+    }
+    setContextMenu(prev => ({ ...prev, show: false }));
+  }, [contextMenu.weekNumber, weekNumbers, insertWeekAfter]);
+
+  // Handle insert week after from context menu
+  const handleInsertWeekAfter = useCallback(() => {
+    if (contextMenu.weekNumber !== null) {
+      // Find the position of the current week and insert after it
+      const weekPosition = weekNumbers.findIndex(week => week === contextMenu.weekNumber);
+      if (weekPosition >= 0) {
+        insertWeekAfter(weekPosition);
+      }
+    }
+    setContextMenu(prev => ({ ...prev, show: false }));
+  }, [contextMenu.weekNumber, weekNumbers, insertWeekAfter]);
 
   const totals = useMemo(() => {
     const totalIntCost = resourcePlans.reduce((sum, plan) => sum + calculateTotalIntCost(plan), 0);
@@ -882,7 +906,7 @@ export function ResourcePlan({
         <div className="mb-2 text-sm text-muted-foreground">
           💡 Tips: Click the gray <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-500 text-white rounded-full text-xs">+</span> buttons to insert weeks at specific positions, or the gray <span className="inline-flex items-center justify-center w-4 h-4 bg-gray-500 text-white rounded-full text-xs">−</span> buttons to remove weeks or roles. 
           <br />
-          <span className="text-blue-600 font-medium">🖱️ New:</span> Right-click on any week column header to delete that specific week from the planning table.
+          <span className="text-blue-600 font-medium">🖱️ New:</span> Right-click on any week column header to insert weeks before/after or delete that specific week from the planning table.
           <br />
           <span className="text-green-600 font-medium">✨ Auto-calculation:</span> When selecting a role from the dropdown, the client hourly rate is automatically calculated using the Default Margin and Exchange Rate. If you type a custom role, ensure it exists in the Resource List tab first.
         </div>
@@ -968,6 +992,21 @@ export function ResourcePlan({
               }}
               onClick={(e) => e.stopPropagation()}
             >
+              <button
+                className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                onClick={handleInsertWeekBefore}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Insert Week Before
+              </button>
+              <button
+                className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                onClick={handleInsertWeekAfter}
+              >
+                <ChevronRight className="h-4 w-4" />
+                Insert Week After
+              </button>
+              <div className="border-t border-gray-200 my-1"></div>
               <button
                 className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                 onClick={handleDeleteWeekFromContextMenu}
