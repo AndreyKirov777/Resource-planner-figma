@@ -60,7 +60,7 @@ const ActionCellRenderer = {
     ctx.font = '14px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('×', buttonX + buttonSize / 2, buttonY + buttonSize / 2);
+    ctx.fillText('X', buttonX + buttonSize / 2, buttonY + buttonSize / 2);
     
     return true;
   },
@@ -793,6 +793,7 @@ export function ResourcePlan({
             getCellContent={getCellContent}
             columns={columns}
             rows={resourcePlans.length}
+            customRenderers={customRenderers}
             onCellEdited={onCellEdited}
             overlayCss=""
             experimental={{
