@@ -965,17 +965,31 @@ export function ResourcePlan({
             />
           </div>
           
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="projectMargin">Estimated Margin</Label>
-            <Input
-              id="projectMargin"
-              value={`${totals.calculatedMargin.toFixed(0)}%`}
-              readOnly
-            />
-          </div>
+
         </CardContent>
       </Card>
-
+      <Card>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-4 gap-4">
+              <div>
+                <Label>Total Internal Cost</Label>
+                <div className="text-lg">${Math.round(totals.totalIntCost)}</div>
+              </div>
+              <div>
+                <Label>Total Price</Label>
+                <div className="text-lg">{currencySymbol}{Math.round(totals.totalPrice)}</div>
+              </div>
+              <div>
+                <Label>Total Estimated Efforts</Label>
+                <div className="text-lg">{Math.round(totals.totalEfforts)}h</div>
+              </div>
+              <div>
+                <Label>Calculated Project Margin</Label>
+                <div className="text-lg">{totals.calculatedMargin.toFixed(1)}%</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       <div className="space-y-4">
         <div className="flex items-center gap-4">
           <h2>Planning Table</h2>
@@ -1207,28 +1221,7 @@ export function ResourcePlan({
           </DialogContent>
         </Dialog>
 
-        <Card>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-4 gap-4">
-              <div>
-                <Label>Total Internal Cost</Label>
-                <div className="text-lg">${Math.round(totals.totalIntCost)}</div>
-              </div>
-              <div>
-                <Label>Total Price</Label>
-                <div className="text-lg">{currencySymbol}{Math.round(totals.totalPrice)}</div>
-              </div>
-              <div>
-                <Label>Total Estimated Efforts</Label>
-                <div className="text-lg">{Math.round(totals.totalEfforts)}h</div>
-              </div>
-              <div>
-                <Label>Calculated Project Margin</Label>
-                <div className="text-lg">{totals.calculatedMargin.toFixed(1)}%</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
       </div>
     </div>
   );
