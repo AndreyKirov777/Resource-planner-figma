@@ -301,9 +301,9 @@ export function ResourcePlan({
       { title: 'Margin', width: 100 },
     ];
 
-    // Add week columns
+    // Add week columns with "Weeks" group header
     weekNumbers.forEach(weekNum => {
-      cols.push({ title: `Week ${weekNum}`, width: 80 });
+      cols.push({ title: `${weekNum}`, width: 80, group: 'Weeks' });
     });
 
     // Add calculation columns
@@ -1027,6 +1027,7 @@ export function ResourcePlan({
             onGridSelectionChange={onGridSelectionChange}
             getCellsForSelection={getCellsForSelection}
             rangeSelect="rect"
+            groupHeaderHeight={36}
             keybindings={{
               selectAll: true,
               selectRow: true,
