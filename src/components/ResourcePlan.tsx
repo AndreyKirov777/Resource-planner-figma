@@ -1014,7 +1014,11 @@ export function ResourcePlan({
           <br />
         </div>
         
-        <div style={{ height: '600px', width: '100%', position: 'relative' }}>
+        <div style={{ 
+          height: `${Math.max(200, 72 + (resourcePlans.length * 34) + 20)}px`, // 36px header + 36px group header + rows * 34px + 20px padding
+          width: '100%', 
+          position: 'relative' 
+        }} className="rounded-lg overflow-hidden border border-gray-200">
           <DataEditor
             getCellContent={getCellContent}
             columns={columns}
