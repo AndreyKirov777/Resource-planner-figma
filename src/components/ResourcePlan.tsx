@@ -1002,16 +1002,6 @@ export function ResourcePlan({
               <Plus className="h-4 w-4 mr-1" />
               Add Week at End
             </Button>
-            {onExportProject && (
-              <Button onClick={onExportProject} size="sm" variant="secondary">
-                Export JSON
-              </Button>
-            )}
-            {onImportProject && (
-              <Button onClick={onImportProject} size="sm" variant="secondary">
-                Import JSON
-              </Button>
-            )}
             <span className="text-sm text-muted-foreground">Weeks: {weekNumbers.length} | Roles: {resourcePlans.length}</span>
           </div>
         </div>
