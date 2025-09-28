@@ -878,7 +878,7 @@ export function ResourcePlan({
     const calculatedMargin = totalPrice > 0 ? ((totalPrice - (totalIntCost * project.exchangeRate)) / totalPrice) * 100 : 0;
     
     return { totalIntCost, totalPrice, totalEfforts, calculatedMargin };
-  }, [resourcePlans, project.exchangeRate]);
+  }, [resourcePlans, project.exchangeRate, weekNumbers]);
 
   // Custom cells for actions - simplified implementation
   const customRenderers = [ActionCellRenderer];
@@ -1226,3 +1226,4 @@ export function ResourcePlan({
     </div>
   );
 }
+
