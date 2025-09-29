@@ -387,9 +387,9 @@ export default function App() {
         const intDailyRate = plan.intHourlyRate * 8;
         const clientDailyRate = plan.clientHourlyRate * 8;
         
-        // Calculate margin
-        const intRateInClientCurrency = plan.intHourlyRate / currentProject.exchangeRate;
-        const margin = plan.clientHourlyRate > 0 ? 
+        // Calculate margin (align with UI: convert internal rate to client currency)
+        const intRateInClientCurrency = plan.intHourlyRate * currentProject.exchangeRate;
+        const margin = plan.clientHourlyRate > 0 ?
           ((plan.clientHourlyRate - intRateInClientCurrency) / plan.clientHourlyRate) * 100 : 0;
 
         // Calculate total efforts (hours)
