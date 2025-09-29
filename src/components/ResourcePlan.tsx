@@ -4,6 +4,7 @@ import '@glideapps/glide-data-grid/dist/index.css';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
@@ -20,6 +21,11 @@ interface ResourcePlanProps {
   onProjectSettingsChange: (settings: Partial<Project>) => void;
   onExportProject?: () => void;
   onImportProject?: () => void;
+  onExportToExcel?: () => void;
+  projectName: string;
+  projectDescription: string;
+  onProjectNameChange: (name: string) => void;
+  onProjectDescriptionChange: (description: string) => void;
 }
 
 // Compute a background color for a percentage value between 0 and 100.
@@ -154,7 +160,12 @@ export function ResourcePlan({
   onDeleteResourcePlan,
   onProjectSettingsChange,
   onExportProject,
-  onImportProject
+  onImportProject,
+  onExportToExcel,
+  projectName,
+  projectDescription,
+  onProjectNameChange,
+  onProjectDescriptionChange
 }: ResourcePlanProps) {
   const [weekNumbers, setWeekNumbers] = useState<number[]>([]);
   const [rolePicker, setRolePicker] = useState<{ open: boolean; row: number | null }>({ open: false, row: null });
@@ -927,65 +938,102 @@ export function ResourcePlan({
 
   return (
     <div className="space-y-6">
+      {/* Project Header - Two columns layout */}
       <Card>
-        <CardHeader>
-          <CardTitle>Project Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-row gap-4 items-end">
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="daysInFTE">Days in FTE/month</Label>
-            <Input
-              id="daysInFTE"
-              type="number"
-              value={project.daysInFTE}
-              onChange={(e) => onProjectSettingsChange({ daysInFTE: parseInt(e.target.value) || 20 })}
-            />
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Project Controls Column */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="projectName">Project name</Label>
+                <Input
+                  id="projectName"
+                  value={projectName}
+                  onChange={(e) => onProjectNameChange(e.target.value)}
+                  placeholder="Enter project name"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button onClick={onExportProject} size="sm" variant="default">
+                  Save file
+                </Button>
+                <Button onClick={onImportProject} size="sm" variant="secondary">
+                  Load file
+                </Button>
+                <Button onClick={onExportToExcel} size="sm" variant="outline">
+                  Export to Excel
+                </Button>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="projectDescription">Project description</Label>
+                <Textarea
+                  id="projectDescription"
+                  value={projectDescription}
+                  onChange={(e) => onProjectDescriptionChange(e.target.value)}
+                  rows={3}
+                  placeholder="Enter project description"
+                />
+              </div>
+            </div>
+            
+            {/* Project Settings Column */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="daysInFTE">Days in FTE/month</Label>
+                <Input
+                  id="daysInFTE"
+                  type="number"
+                  value={project.daysInFTE}
+                  onChange={(e) => onProjectSettingsChange({ daysInFTE: parseInt(e.target.value) || 20 })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="clientCurrency">Client currency</Label>
+                <Select
+                  value={project.clientCurrency}
+                  onValueChange={(value) => onProjectSettingsChange({ clientCurrency: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="GBP">GBP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="exchangeRate">Exchange rate (to USD)</Label>
+                <Input
+                  id="exchangeRate"
+                  type="number"
+                  step="0.01"
+                  value={project.exchangeRate}
+                  onChange={(e) => onProjectSettingsChange({ exchangeRate: parseFloat(e.target.value) || 0.89 })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="defaultMargin">Default Margin</Label>
+                <Input
+                  id="defaultMargin"
+                  type="text"
+                  value={`${Number.isFinite(project.defaultMargin as number) ? (project.defaultMargin as number).toFixed(0) : '50'}%`}
+                  onChange={(e) => {
+                    const numeric = e.target.value.replace(/[^0-9.]/g, '');
+                    const parsed = parseFloat(numeric);
+                    const clamped = isNaN(parsed) ? 0 : Math.max(0, Math.min(100, parsed));
+                    onProjectSettingsChange({ defaultMargin: clamped });
+                  }}
+                />
+              </div>
+            </div>
           </div>
-          
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="clientCurrency">Client currency</Label>
-            <Select
-              value={project.clientCurrency}
-              onValueChange={(value) => onProjectSettingsChange({ clientCurrency: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="EUR">EUR</SelectItem>
-                <SelectItem value="USD">USD</SelectItem>
-                <SelectItem value="GBP">GBP</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="exchangeRate">Exchange rate (to USD)</Label>
-            <Input
-              id="exchangeRate"
-              type="number"
-              step="0.01"
-              value={project.exchangeRate}
-              onChange={(e) => onProjectSettingsChange({ exchangeRate: parseFloat(e.target.value) || 0.89 })}
-            />
-          </div>
-          
-          <div className="flex-1 space-y-2">
-            <Label htmlFor="defaultMargin">Default Margin</Label>
-            <Input
-              id="defaultMargin"
-              type="text"
-              value={`${Number.isFinite(project.defaultMargin as number) ? (project.defaultMargin as number).toFixed(0) : '50'}%`}
-              onChange={(e) => {
-                const numeric = e.target.value.replace(/[^0-9.]/g, '');
-                const parsed = parseFloat(numeric);
-                const clamped = isNaN(parsed) ? 0 : Math.max(0, Math.min(100, parsed));
-                onProjectSettingsChange({ defaultMargin: clamped });
-              }}
-            />
-          </div>
-          
-
         </CardContent>
       </Card>
       <Card>

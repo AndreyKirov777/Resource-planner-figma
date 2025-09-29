@@ -571,51 +571,6 @@ export default function App() {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <div className="flex flex-col gap-2 max-w-2xl">
-          <label className="text-sm text-muted-foreground">Project name</label>
-          <div className="flex items-center gap-2">
-            <Input
-              className="w-64 sm:w-72 md:w-80"
-              value={editableProjectName}
-              onChange={(e) => setEditableProjectName(e.target.value)}
-              onBlur={() => {
-                if (editableProjectName !== currentProject.name) {
-                  handleProjectSettingsChange({ name: editableProjectName });
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-            <div className="flex gap-2">
-              <Button onClick={handleExportProject} size="sm" variant="default">
-                Save file
-              </Button>
-              <Button onClick={handleImportProject} size="sm" variant="secondary">
-                Load file
-              </Button>
-              <Button onClick={handleExportToExcel} size="sm" variant="outline">
-                Export to Excel
-              </Button>
-            </div>
-          </div>
-          <label className="text-sm text-muted-foreground">Project description</label>
-          <Textarea
-            value={editableProjectDescription}
-            onChange={(e) => setEditableProjectDescription(e.target.value)}
-            onBlur={() => {
-              if ((editableProjectDescription || '') !== (currentProject.description || '')) {
-                handleProjectSettingsChange({ description: editableProjectDescription });
-              }
-            }}
-            rows={3}
-          />
-        </div>
-      </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="resource-plan">Resource Plan</TabsTrigger>
@@ -635,6 +590,17 @@ export default function App() {
             onProjectSettingsChange={handleProjectSettingsChange}
             onExportProject={handleExportProject}
             onImportProject={handleImportProject}
+            onExportToExcel={handleExportToExcel}
+            projectName={editableProjectName}
+            projectDescription={editableProjectDescription}
+            onProjectNameChange={(name) => {
+              setEditableProjectName(name);
+              handleProjectSettingsChange({ name });
+            }}
+            onProjectDescriptionChange={(description) => {
+              setEditableProjectDescription(description);
+              handleProjectSettingsChange({ description });
+            }}
           />
         </TabsContent>
         
