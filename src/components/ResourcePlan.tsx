@@ -942,30 +942,34 @@ export function ResourcePlan({
       <Card>
         <CardContent className="pt-6">
           <div className="grid grid-cols-2 gap-6">
-            {/* Project Controls Column */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="projectName">Project name</Label>
-                <Input
-                  id="projectName"
-                  value={projectName}
-                  onChange={(e) => onProjectNameChange(e.target.value)}
-                  placeholder="Enter project name"
-                />
+            {/* Project Controls Column - Split into two columns */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Left Column: Project name and buttons */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="projectName">Project name</Label>
+                  <Input
+                    id="projectName"
+                    value={projectName}
+                    onChange={(e) => onProjectNameChange(e.target.value)}
+                    placeholder="Enter project name"
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button onClick={onExportProject} size="sm" variant="default">
+                    Save file
+                  </Button>
+                  <Button onClick={onImportProject} size="sm" variant="secondary">
+                    Load file
+                  </Button>
+                  <Button onClick={onExportToExcel} size="sm" variant="outline">
+                    Export to Excel
+                  </Button>
+                </div>
               </div>
               
-              <div className="flex gap-2">
-                <Button onClick={onExportProject} size="sm" variant="default">
-                  Save file
-                </Button>
-                <Button onClick={onImportProject} size="sm" variant="secondary">
-                  Load file
-                </Button>
-                <Button onClick={onExportToExcel} size="sm" variant="outline">
-                  Export to Excel
-                </Button>
-              </div>
-              
+              {/* Right Column: Project description */}
               <div className="space-y-2">
                 <Label htmlFor="projectDescription">Project description</Label>
                 <Textarea
