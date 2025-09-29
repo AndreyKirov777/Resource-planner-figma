@@ -978,59 +978,65 @@ export function ResourcePlan({
               </div>
             </div>
             
-            {/* Project Settings Column */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="daysInFTE">Days in FTE/month</Label>
-                <Input
-                  id="daysInFTE"
-                  type="number"
-                  value={project.daysInFTE}
-                  onChange={(e) => onProjectSettingsChange({ daysInFTE: parseInt(e.target.value) || 20 })}
-                />
+            {/* Project Settings - Split into two columns */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Left Column: Days in FTE/month and Client currency */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="daysInFTE">Days in FTE/month</Label>
+                  <Input
+                    id="daysInFTE"
+                    type="number"
+                    value={project.daysInFTE}
+                    onChange={(e) => onProjectSettingsChange({ daysInFTE: parseInt(e.target.value) || 20 })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="clientCurrency">Client currency</Label>
+                  <Select
+                    value={project.clientCurrency}
+                    onValueChange={(value) => onProjectSettingsChange({ clientCurrency: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="clientCurrency">Client currency</Label>
-                <Select
-                  value={project.clientCurrency}
-                  onValueChange={(value) => onProjectSettingsChange({ clientCurrency: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="GBP">GBP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="exchangeRate">Exchange rate (to USD)</Label>
-                <Input
-                  id="exchangeRate"
-                  type="number"
-                  step="0.01"
-                  value={project.exchangeRate}
-                  onChange={(e) => onProjectSettingsChange({ exchangeRate: parseFloat(e.target.value) || 0.89 })}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="defaultMargin">Default Margin</Label>
-                <Input
-                  id="defaultMargin"
-                  type="text"
-                  value={`${Number.isFinite(project.defaultMargin as number) ? (project.defaultMargin as number).toFixed(0) : '50'}%`}
-                  onChange={(e) => {
-                    const numeric = e.target.value.replace(/[^0-9.]/g, '');
-                    const parsed = parseFloat(numeric);
-                    const clamped = isNaN(parsed) ? 0 : Math.max(0, Math.min(100, parsed));
-                    onProjectSettingsChange({ defaultMargin: clamped });
-                  }}
-                />
+              {/* Right Column: Exchange rate and Default margin */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="exchangeRate">Exchange rate (to USD)</Label>
+                  <Input
+                    id="exchangeRate"
+                    type="number"
+                    step="0.01"
+                    value={project.exchangeRate}
+                    onChange={(e) => onProjectSettingsChange({ exchangeRate: parseFloat(e.target.value) || 0.89 })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="defaultMargin">Default Margin</Label>
+                  <Input
+                    id="defaultMargin"
+                    type="text"
+                    value={`${Number.isFinite(project.defaultMargin as number) ? (project.defaultMargin as number).toFixed(0) : '50'}%`}
+                    onChange={(e) => {
+                      const numeric = e.target.value.replace(/[^0-9.]/g, '');
+                      const parsed = parseFloat(numeric);
+                      const clamped = isNaN(parsed) ? 0 : Math.max(0, Math.min(100, parsed));
+                      onProjectSettingsChange({ defaultMargin: clamped });
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
