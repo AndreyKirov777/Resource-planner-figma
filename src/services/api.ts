@@ -1,4 +1,7 @@
-const API_BASE_URL = 'http://localhost:3001/api';
+// Use relative URL in production, absolute in development
+const API_BASE_URL = import.meta.env.PROD 
+  ? '/api'  // Production: same server
+  : 'http://localhost:3001/api';  // Development: separate server
 
 // Types
 export interface Project {

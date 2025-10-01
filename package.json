@@ -53,6 +53,7 @@
             "recharts": "^2.15.2",
             "sonner": "^2.0.3",
             "tailwind-merge": "*",
+            "tsx": "^4.20.5",
             "vaul": "^1.1.2"
       },
       "devDependencies": {
@@ -60,7 +61,6 @@
             "@types/express": "^5.0.3",
             "@types/node": "^20.10.0",
             "@vitejs/plugin-react-swc": "^3.10.2",
-            "tsx": "^4.20.5",
             "vite": "^5.4.19"
       },
       "scripts": {

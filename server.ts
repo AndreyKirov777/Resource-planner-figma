@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import { PrismaClient } from './src/generated/prisma';
 
 const app = express();
@@ -8,6 +9,9 @@ const PORT = 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the React app build directory
+app.use(express.static(path.join(__dirname, 'build')));
 
 // Initialize default project if none exists
 async function initializeDefaultProject() {
@@ -572,9 +576,15 @@ app.delete('/api/weekly-allocations/:id', async (req, res) => {
   }
 });
 
+// Serve React app for all non-API routes (must be last)
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
 // Initialize default project and start server
 initializeDefaultProject().then(() => {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`API endpoints available at http://localhost:${PORT}/api`);
   });
 }).catch(console.error);
